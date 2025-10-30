@@ -5,12 +5,13 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "Vlt")
+@Table(name = "VLT")
 @Data
 public class Vlt {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_vlt")
     private Long idVlt;
 
     @Column(unique = true, nullable = false)
@@ -21,4 +22,5 @@ public class Vlt {
 
     private String localizacao;
 }
+
 

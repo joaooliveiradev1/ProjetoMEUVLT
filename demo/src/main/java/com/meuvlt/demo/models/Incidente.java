@@ -1,8 +1,10 @@
 package com.meuvlt.demo.models;
 
-import com.meuvlt.demo.models.enums.StatusIncidente;
+import com.meuvlt.demo.models.Condutor;
+import com.meuvlt.demo.models.Viagem;
 import jakarta.persistence.*;
 import lombok.Data;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -12,22 +14,29 @@ public class Incidente {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_incidente")
     private Long idIncidente;
 
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
+    @Column(name = "data_hora")
     private LocalDateTime dataHora;
 
-    @Enumerated(EnumType.STRING)
-    private StatusIncidente status;
+    private String status;
 
     @ManyToOne
-    @JoinColumn(name = "id_usuario_condutor")
+    @JoinColumn(
+            name = "id_usuario_condutor",
+            referencedColumnName = "id_condutor"
+    )
     private Condutor condutor;
 
     @ManyToOne
-    @JoinColumn(name = "id_viagem")
+    @JoinColumn(
+            name = "id_viagem",
+            referencedColumnName = "id_viagem"
+    )
     private Viagem viagem;
 }
 

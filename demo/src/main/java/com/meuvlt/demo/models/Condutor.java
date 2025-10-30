@@ -10,13 +10,18 @@ public class Condutor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_condutor")
     private Long idCondutor;
 
     @OneToOne
-    @JoinColumn(name = "id_usuario", nullable = false)
+    @JoinColumn(
+            name = "id_usuario",
+            referencedColumnName = "id_usuario",
+            nullable = false
+    )
     private Usuario usuario;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true)
     private String matricula;
 }
 

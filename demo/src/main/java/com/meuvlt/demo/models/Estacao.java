@@ -11,6 +11,7 @@ public class Estacao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_estacao")
     private Long idEstacao;
 
     private String nome;
@@ -20,4 +21,5 @@ public class Estacao {
     @OneToMany(mappedBy = "estacao")
     private List<Parada> paradas;
 }
+
 
