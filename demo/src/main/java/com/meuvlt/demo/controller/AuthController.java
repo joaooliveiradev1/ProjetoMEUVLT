@@ -1,13 +1,12 @@
 package com.meuvlt.demo.controller;
 
-import com.meuvlt.demo.models.Usuario;
+import com.meuvlt.demo.models.Entity.Usuario;
+import com.meuvlt.demo.models.enums.TipoUsuario;
 import com.meuvlt.demo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -34,5 +33,5 @@ public class AuthController {
         }
         return "Credenciais inválidas!";
     }
-
 }
+
