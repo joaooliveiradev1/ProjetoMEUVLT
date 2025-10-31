@@ -1,4 +1,4 @@
-package com.meuvlt.demo.models;
+package com.meuvlt.demo.models.Entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -6,35 +6,29 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Alerta")
-@Data
 public class Alerta {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_alerta")
-    private Long idAlerta;
+    private int idAlerta;
 
+    @Column(nullable = false)
     private String titulo;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false)
     private String mensagem;
 
-    @Column(name = "data_hora_envio")
+    @Column(name = "data_hora_envio", nullable = false)
     private LocalDateTime dataHoraEnvio;
 
     @ManyToOne
-    @JoinColumn(
-            name = "id_usuario_admin",
-            referencedColumnName = "id_usuario"
-    )
+    @JoinColumn(name = "id_usuario_admin")
     private Usuario administrador;
 
     @ManyToOne
-    @JoinColumn(
-            name = "id_incidente",
-            referencedColumnName = "id_incidente"
-    )
+    @JoinColumn(name = "id_incidente")
     private Incidente incidente;
+
 }
 
 
