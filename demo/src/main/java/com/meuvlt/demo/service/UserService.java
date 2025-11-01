@@ -40,21 +40,18 @@ public class UserService {
         return usuarioSalvo.toDTO();
     }
 
-    // ✅ READ - Buscar por ID
     public UsuarioDTO buscarPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
         return usuario.toDTO();
     }
 
-    // ✅ READ - Buscar por Email
     public UsuarioDTO buscarPorEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado com email: " + email));
         return usuario.toDTO();
     }
 
-    // ✅ READ - Listar todos
     public List<UsuarioDTO> listarTodos() {
         return usuarioRepository.findAll()
                 .stream()
@@ -62,7 +59,6 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    // ✅ READ - Listar por tipo
     public List<UsuarioDTO> listarPorTipo(TipoUsuario tipo) {
         return usuarioRepository.findByTipo(tipo)
                 .stream()
@@ -70,7 +66,6 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    // ✅ DELETE - Deletar usuário
     public void deletarUsuario(Long id) {
         if (!usuarioRepository.existsById(id)) {
             throw new RuntimeException("Usuário não encontrado com ID: " + id);
@@ -78,7 +73,6 @@ public class UserService {
         usuarioRepository.deleteById(id);
     }
 
-    // ✅ AUTENTICAÇÃO - Registro
     public Usuario register(Usuario user) {
         // Verificar se email já existe
         if (usuarioRepository.existsByEmail(user.getEmail())) {
@@ -89,14 +83,12 @@ public class UserService {
         return usuarioRepository.save(user);
     }
 
-    // ✅ AUTENTICAÇÃO - Login
     public boolean login(String email, String senha) {
         Optional<Usuario> user = usuarioRepository.findByEmail(email);
         if (user.isEmpty()) return false;
         return passwordEncoder.matches(senha, user.get().getSenha());
     }
 
-    // ✅ VALIDAÇÃO - Verificar se email existe
     public boolean emailExiste(String email) {
         return usuarioRepository.existsByEmail(email);
     }
