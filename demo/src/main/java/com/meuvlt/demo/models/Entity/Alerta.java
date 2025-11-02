@@ -29,6 +29,53 @@ public class Alerta {
     @JoinColumn(name = "id_incidente")
     private Incidente incidente;
 
+    public int getIdAlerta() {
+        return idAlerta;
+    }
+
+    public void setIdAlerta(int idAlerta) {
+        this.idAlerta = idAlerta;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
+    public String getMensagem() {
+        return mensagem;
+    }
+
+    public void setMensagem(String mensagem) {
+        this.mensagem = mensagem;
+    }
+
+    public LocalDateTime getDataHoraEnvio() {
+        return dataHoraEnvio;
+    }
+
+    public void setDataHoraEnvio(LocalDateTime dataHoraEnvio) {
+        this.dataHoraEnvio = dataHoraEnvio;
+    }
+
+    public Usuario getAdministrador() {
+        return administrador;
+    }
+
+    public void setAdministrador(Usuario administrador) {
+        this.administrador = administrador;
+    }
+
+    public Incidente getIncidente() {
+        return incidente;
+    }
+
+    public void setIncidente(Incidente incidente) {
+        this.incidente = incidente;
+    }
 }
 
 

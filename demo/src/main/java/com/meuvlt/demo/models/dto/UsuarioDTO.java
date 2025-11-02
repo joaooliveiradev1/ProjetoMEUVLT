@@ -10,6 +10,7 @@ public class UsuarioDTO {
     private String email;
     private TipoUsuario tipo;
 
+
     public int getIdUsuario() {
         return idUsuario;
     }

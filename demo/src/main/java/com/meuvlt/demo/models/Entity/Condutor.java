@@ -27,5 +27,8 @@ public class Condutor {
 
     @OneToMany(mappedBy = "condutor")
     private List<Incidente> incidentes = new ArrayList<>();
+
+    public void setUsuario(Usuario novoUsuario) {
+    }
 }
 

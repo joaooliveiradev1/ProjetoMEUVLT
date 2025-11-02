@@ -32,9 +32,6 @@ public class Usuario {
     @Column(nullable = false)
     private TipoUsuario tipo;
 
-    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
-    private Condutor condutor;
-
     @OneToMany(mappedBy = "usuarioPassageiro")
     private List<Avaliacao> avaliacoes = new ArrayList<>();
 
@@ -56,7 +53,6 @@ public class Usuario {
         dto.setTemPerfilCondutor(temPerfilCondutor);
         return dto;
 
-
     }
 
     public int getIdUsuario() {
@@ -67,20 +63,20 @@ public class Usuario {
         this.idUsuario = idUsuario;
     }
 
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
     public String getEmail() {
         return email;
     }
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
     public String getSenha() {
@@ -97,22 +93,6 @@ public class Usuario {
 
     public void setTipo(TipoUsuario tipo) {
         this.tipo = tipo;
-    }
-
-    public Condutor getCondutor() {
-        return condutor;
-    }
-
-    public void setCondutor(Condutor condutor) {
-        this.condutor = condutor;
-    }
-
-    public List<Avaliacao> getAvaliacoes() {
-        return avaliacoes;
-    }
-
-    public void setAvaliacoes(List<Avaliacao> avaliacoes) {
-        this.avaliacoes = avaliacoes;
     }
 }
 
