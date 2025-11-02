@@ -6,6 +6,7 @@ import com.meuvlt.demo.models.dto.UsuarioDTO;
 import com.meuvlt.demo.models.dto.UsuarioResponseDTO;
 import com.meuvlt.demo.models.enums.TipoUsuario;
 import com.meuvlt.demo.repository.UsuarioRepository;
+import com.meuvlt.demo.security.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -22,10 +23,10 @@ public class UsuarioService implements UserDetailsService {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private JwtService jwtService;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private JwtUtils jwtUtils;
 
     public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
@@ -93,7 +94,7 @@ public class UsuarioService implements UserDetailsService {
 
         // Gera o token JWT
         UserDetails userDetails = this.loadUserByUsername(email);
-        return jwtService.generateToken(userDetails);
+        return jwtUtils.generateToken(email);
     }
 
     @Override
