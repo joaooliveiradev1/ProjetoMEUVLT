@@ -26,5 +26,44 @@ public class Linha {
     @OneToMany(mappedBy = "linha")
     private List<Viagem> viagens = new ArrayList<>();
 
+    public int getIdLinha() {
+        return idLinha;
+    }
+
+    public void setIdLinha(int idLinha) {
+        this.idLinha = idLinha;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getNumero() {
+        return numero;
+    }
+
+    public void setNumero(String numero) {
+        this.numero = numero;
+    }
+
+    public List<Viagem> getViagens() {
+        return viagens;
+    }
+
+    public void setViagens(List<Viagem> viagens) {
+        this.viagens = viagens;
+    }
+
+    public List<Parada> getParadas() {
+        return paradas;
+    }
+
+    public void setParadas(List<Parada> paradas) {
+        this.paradas = paradas;
+    }
 }
 
