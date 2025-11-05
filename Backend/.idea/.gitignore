@@ -1,0 +1,31 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+## IDE ##
+.idea/
+.vscode/
+*.iml
+
+## Java / Spring ##
+target/
+*.jar
+*.war
+*.class
+
+## Maven / Gradle ##
+.mvn/
+!mvnw
+!mvnw.cmd
+.gradle/
+build/
+
+## Node / React ##
+node_modules/
+dist/
+.next/
+.env
+.env.local
+
+## OS ##
+.DS_Store
+Thumbs.db
