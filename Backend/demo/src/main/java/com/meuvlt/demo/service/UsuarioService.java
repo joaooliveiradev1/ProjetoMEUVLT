@@ -42,7 +42,7 @@ public class UsuarioService implements UserDetailsService {
         Usuario usuario = new Usuario();
         usuario.setNome(dto.getNome());
         usuario.setEmail(dto.getEmail());
-        usuario.setSenha(passwordEncoder.encode(UsuarioCreateDTO.getSenha()));
+        usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         usuario.setTipo(dto.getTipo() != null ? dto.getTipo() : TipoUsuario.Passageiro);
 
         Usuario novo = usuarioRepository.save(usuario);
@@ -64,8 +64,8 @@ public class UsuarioService implements UserDetailsService {
         usuario.setNome(dto.getNome());
         usuario.setEmail(dto.getEmail());
 
-        if (UsuarioCreateDTO.getSenha() != null && !UsuarioCreateDTO.getSenha().isEmpty()) {
-            usuario.setSenha(passwordEncoder.encode(UsuarioCreateDTO.getSenha()));
+        if (dto.getSenha() != null && !dto.getSenha().isEmpty()) {
+            usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         }
 
         if (dto.getTipo() != null) {

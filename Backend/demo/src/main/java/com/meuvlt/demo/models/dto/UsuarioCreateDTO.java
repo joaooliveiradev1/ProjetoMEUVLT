@@ -8,7 +8,7 @@ import lombok.Data;
 public class UsuarioCreateDTO {
     private String nome;
     private String email;
-    private static String senha;
+    private String senha;
     private TipoUsuario tipo;
 
 
@@ -28,12 +28,12 @@ public class UsuarioCreateDTO {
         this.email = email;
     }
 
-    public static String getSenha() {
+    public String getSenha() {
         return senha;
     }
 
     public void setSenha(String senha) {
-        UsuarioCreateDTO.senha = senha;
+        this.senha = senha;
     }
 
     public TipoUsuario getTipo() {

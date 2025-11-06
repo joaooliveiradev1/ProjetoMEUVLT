@@ -61,7 +61,7 @@ public class AuthController {
     public ResponseEntity<?> validateToken(@RequestBody Map<String, String> request) {
         try {
             String token = request.get("token");
-            boolean isValid = JwtService.validateToken(token);
+            boolean isValid = JwtService.validateToken(token, user);
 
             if (isValid) {
                 String email = JwtService.extractUsername(token);
