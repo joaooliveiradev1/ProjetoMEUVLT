@@ -29,16 +29,14 @@ public class EstacaoService {
 
         System.out.println("Linha: " + linha.getIdLinha() + " - " + linha.getNome());
 
-        // 2. Criar NOVA instância (evita problemas de referência)
         Estacao novaEstacao = new Estacao();
         novaEstacao.setNome(estacao.getNome());
         novaEstacao.setEndereco(estacao.getEndereco());
 
-        // 3. Vincular usando o setter manual
         System.out.println("Antes do setLinha:");
         System.out.println("Linha na novaEstacao: " + (novaEstacao.getLinha() != null ? novaEstacao.getLinha().getIdLinha() : "null"));
 
-        novaEstacao.setLinha(linha); // Isso deve mostrar o debug do setter
+        novaEstacao.setLinha(linha);
 
         System.out.println("Depois do setLinha:");
         System.out.println("Linha na novaEstacao: " + (novaEstacao.getLinha() != null ? novaEstacao.getLinha().getIdLinha() : "null"));

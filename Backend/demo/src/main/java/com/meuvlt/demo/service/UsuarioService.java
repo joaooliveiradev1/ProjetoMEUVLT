@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class UsuarioService implements UserDetailsService {
+public class UsuarioService{
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -97,7 +97,6 @@ public class UsuarioService implements UserDetailsService {
         return jwtUtils.generateToken(email);
     }
 
-    @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         var usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
