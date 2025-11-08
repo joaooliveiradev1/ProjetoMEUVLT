@@ -12,9 +12,6 @@ import java.util.Date;
 @Component
 public class JwtUtils {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-
     @Value("${jwt.expiration.ms}")
     private long jwtExpirationMs;
 
@@ -22,8 +19,9 @@ public class JwtUtils {
 
     @PostConstruct
     public void init() {
-        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
     }
+
 
     public String generateToken(String email) {
         return Jwts.builder()

@@ -8,7 +8,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
 import java.util.function.Function;
@@ -16,12 +15,7 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // Solução 1A: Gerar chave automaticamente (mais seguro)
     private static final SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
-
-    // Solução 1B: Ou usar uma chave base64 de 64 bytes (512 bits)
-    // private static final String SECRET = "sua-chave-base64-de-64-bytes-aqui-muito-longa-e-segura-com-exatamente-64-caracteres-em-base64";
-    // private static final SecretKey key = Keys.hmacShaKeyFor(Base64.getDecoder().decode(SECRET));
 
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
@@ -32,20 +26,20 @@ public class JwtService {
                 .compact();
     }
 
-    public String extractEmail(String token) {
+    public static String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    public String extractUsername(String token) {
+    public static String extractUsername(String token) {
         return extractEmail(token);
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> resolver) {
+    public static <T> T extractClaim(String token, Function<Claims, T> resolver) {
         final Claims claims = extractAllClaims(token);
         return resolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {
+    private static Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -66,7 +60,7 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    public boolean validateToken(String token) {
+    public static boolean validateToken(String token) {
         try {
             extractAllClaims(token);
             return true;
@@ -75,7 +69,6 @@ public class JwtService {
         }
     }
 
-    // Método útil para gerar uma chave segura (execute uma vez e guarde o resultado)
     public static void generateAndPrintSecretKey() {
         SecretKey newKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
         String base64Key = Base64.getEncoder().encodeToString(newKey.getEncoded());
