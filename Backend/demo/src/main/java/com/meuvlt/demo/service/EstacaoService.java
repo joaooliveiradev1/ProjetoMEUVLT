@@ -21,37 +21,21 @@ public class EstacaoService {
 
 
     public Estacao criarEstacaoComLinha(Estacao estacao, int idLinha) {
-        System.out.println("=== MÉTODO ALTERNATIVO ===");
 
-        // 1. Buscar linha
         Linha linha = linhaRepository.findById((long) idLinha)
                 .orElseThrow(() -> new RuntimeException("Linha não encontrada: " + idLinha));
-
-        System.out.println("Linha: " + linha.getIdLinha() + " - " + linha.getNome());
 
         Estacao novaEstacao = new Estacao();
         novaEstacao.setNome(estacao.getNome());
         novaEstacao.setEndereco(estacao.getEndereco());
 
-        System.out.println("Antes do setLinha:");
-        System.out.println("Linha na novaEstacao: " + (novaEstacao.getLinha() != null ? novaEstacao.getLinha().getIdLinha() : "null"));
-
         novaEstacao.setLinha(linha);
-
-        System.out.println("Depois do setLinha:");
-        System.out.println("Linha na novaEstacao: " + (novaEstacao.getLinha() != null ? novaEstacao.getLinha().getIdLinha() : "null"));
-
-        // 4. Salvar
         Estacao saved = estacaoRepository.save(novaEstacao);
-        System.out.println("Salvo com ID: " + saved.getIdEstacao());
 
-        // 5. Verificar imediatamente
         Optional<Estacao> verificacao = estacaoRepository.findById(saved.getIdEstacao());
         if (verificacao.isPresent()) {
             Estacao doBanco = verificacao.get();
-            System.out.println("No banco - Linha: " + (doBanco.getLinha() != null ? doBanco.getLinha().getIdLinha() : "NULL"));
         }
-
         return saved;
     }
 

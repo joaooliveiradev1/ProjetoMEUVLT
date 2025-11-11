@@ -36,7 +36,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        // Permite rotas públicas
         if (path.startsWith("/auth/")) {
             filterChain.doFilter(request, response);
             return;
@@ -49,13 +48,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
             String role = claims.get("role", String.class);
 
-            // 🔹 Log para depuração
-            System.out.println("🔹 Token válido para: " + email);
-            System.out.println("🔹 Role no token: " + role);
-
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            // 🔹 Cria a autoridade a partir do claim do token
             var authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
 
             UsernamePasswordAuthenticationToken authToken =

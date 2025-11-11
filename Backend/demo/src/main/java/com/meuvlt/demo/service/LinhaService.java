@@ -14,7 +14,6 @@ public class LinhaService {
     @Autowired
     private LinhaRepository linhaRepository;
 
-    // Create
     public Linha criarLinha(Linha linha) {
         return linhaRepository.save(linha);
     }

@@ -65,5 +65,7 @@ public class Linha {
     public void setParadas(List<Parada> paradas) {
         this.paradas = paradas;
     }
+
+
 }
 

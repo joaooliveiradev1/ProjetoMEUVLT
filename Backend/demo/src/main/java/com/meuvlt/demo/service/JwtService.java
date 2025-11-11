@@ -76,7 +76,6 @@ public class JwtService {
         }
     }
 
-    // Gera uma nova chave fixa (use apenas uma vez para gerar)
     public static void generateAndPrintSecretKey() {
         SecretKey newKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
         String base64Key = Base64.getEncoder().encodeToString(newKey.getEncoded());
