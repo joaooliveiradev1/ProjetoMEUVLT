@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity
@@ -46,6 +47,17 @@ public class SecurityConfig {
                                 "/auth/recuperar-senha",
                                 "/auth/validate-token"
                         ).permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/linhas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/estacoes/**").permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/linhas/**", "/estacoes/**").hasRole("Administrador")
+                        .requestMatchers(HttpMethod.PUT, "/api/linhas/**", "/estacoes/**").hasRole("Administrador")
+                        .requestMatchers(HttpMethod.DELETE, "/api/linhas/**", "/estacoes/**").hasRole("Administrador")
+
+
+                        .requestMatchers("/usuarios/**").hasRole("Administrador")
+
                         .anyRequest().authenticated()
                 )
 
