@@ -49,21 +49,19 @@ public class SecurityConfig {
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/linhas/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/linhas/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.PUT, "/api/linhas/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.DELETE, "/api/linhas/**").hasAuthority("Administrador")
+
                         .requestMatchers(HttpMethod.GET, "/estacoes/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/estacoes/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.PUT, "/estacoes/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.DELETE, "/estacoes/**").hasAuthority("Administrador")
 
-                        .requestMatchers(HttpMethod.POST, "/api/linhas/**", "/estacoes/**").hasRole("Administrador")
-                        .requestMatchers(HttpMethod.PUT, "/api/linhas/**", "/estacoes/**").hasRole("Administrador")
-                        .requestMatchers(HttpMethod.DELETE, "/api/linhas/**", "/estacoes/**").hasRole("Administrador")
-
-
-                        .requestMatchers("/usuarios/**").hasRole("Administrador")
-
+                        .requestMatchers("/usuarios/**").hasAuthority("Administrador")
                         .anyRequest().authenticated()
                 )
-
-                // Filtro JWT só roda em rotas protegidas
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 

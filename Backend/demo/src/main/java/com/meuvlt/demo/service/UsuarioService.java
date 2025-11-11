@@ -18,6 +18,8 @@ import java.util.List;
 
 @Service
 public class UsuarioService{
+    @Autowired
+    private JwtService jwtService;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -92,9 +94,8 @@ public class UsuarioService{
             throw new RuntimeException("Senha incorreta");
         }
 
-        // Gera o token JWT
-        UserDetails userDetails = this.loadUserByUsername(email);
-        return jwtUtils.generateToken(email);
+        UserDetails userDetails = loadUserByUsername(email);
+        return jwtService.generateToken(userDetails);
     }
 
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {

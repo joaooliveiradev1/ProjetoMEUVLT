@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -18,8 +19,14 @@ public class JwtService {
     private static final SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
 
     public String generateToken(UserDetails userDetails) {
+        String role = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse("ROLE_USER");
+
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24h
                 .signWith(key, SignatureAlgorithm.HS512)
@@ -39,7 +46,7 @@ public class JwtService {
         return resolver.apply(claims);
     }
 
-    private static Claims extractAllClaims(String token) {
+    public static Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -69,6 +76,7 @@ public class JwtService {
         }
     }
 
+    // Gera uma nova chave fixa (use apenas uma vez para gerar)
     public static void generateAndPrintSecretKey() {
         SecretKey newKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
         String base64Key = Base64.getEncoder().encodeToString(newKey.getEncoded());
