@@ -71,7 +71,7 @@ export default function AuthPage() {
 
   return (
     <>
-      <div className="flex-1 flex items-center justify-center p-4 bg-cyan-900">
+      <div className="flex-1 flex items-center bg-gradient-to-r from-slate-500 to-slate-800 justify-center p-4 ">
         <Tabs className="w-full max-w-md pb-35" defaultValue="account">
 
           <TabsList>

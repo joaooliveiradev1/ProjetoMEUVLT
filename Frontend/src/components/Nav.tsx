@@ -12,25 +12,22 @@ import Link from "next/link"
 
 export default function Nav(){
 
-    const autenticado = false;
-
     return(
         <nav className="flex w-full items-center justify-between bg-white px-16 py-5 shadow-md">
             <div className="flex items-center gap-3">
-            <Image height={40} width={40} alt="logo" src="/Image.svg"/>
-            <h2 className="text-xl font-semibold text-gray-800">Meu vlt</h2>
-            
+            <Image alt="logo" src="/train.svg" width={40} height={40}/>
+            <h2 className="text-2xl font-bold text-gray-800">Meu vlt</h2>
             </div>
 
-            <ul className="flex list-none gap-8 text-gray-800 font-medium">
+            <ul className="flex list-none gap-8 text-gray-800 font-medium pr-20">
                 <li>
                     <Link className="transition-colors duration-300 hover:text-blue-600" href={"/#"}>
                     Inicio
                     </Link>
                     </li>
                 <li>
-                    <Link className="transition-colors duration-300 hover:text-blue-600" href={"/#"}>
-                    Rota
+                    <Link className="transition-colors duration-300 hover:text-blue-600" href={"/linhas"}>
+                    Linhas
                     </Link>
                     </li>
                 <li>
@@ -42,13 +39,12 @@ export default function Nav(){
                     <Link className="transition-colors duration-300 hover:text-blue-600" href={"/#"}>
                     Contato
                     </Link>
-                    </li>
+                </li>
             </ul>
         
             <DropdownMenu>
             <DropdownMenuTrigger><Menu /></DropdownMenuTrigger>
             <DropdownMenuContent>
-               { autenticado ?(
                 <>
                  <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -59,7 +55,6 @@ export default function Nav(){
                     </Link>
                 </DropdownMenuItem>
                 </> 
-               ) : (
                 <>
                 <DropdownMenuLabel >
                     <Link href={"/auth"}>
@@ -73,8 +68,6 @@ export default function Nav(){
                     </Link>
                     </DropdownMenuItem>
                 </>
-               )
-            }
             </DropdownMenuContent>
             </DropdownMenu>
         </nav>
