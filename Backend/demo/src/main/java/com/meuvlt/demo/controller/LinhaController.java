@@ -14,7 +14,11 @@ import java.util.Optional;
 public class LinhaController {
 
     @Autowired
-    private LinhaService linhaService;
+    private final LinhaService linhaService;
+
+    public LinhaController(LinhaService linhaService) {
+        this.linhaService = linhaService;
+    }
 
     @PostMapping
     public ResponseEntity<Linha> criarLinha(@RequestBody Linha linha) {

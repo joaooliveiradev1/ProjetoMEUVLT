@@ -24,7 +24,45 @@ public class Vlt {
     @OneToMany(mappedBy = "vlt")
     private List<Viagem> viagens = new ArrayList<>();
 
-    // Construtores, getters e setters
+    public int getIdVlt() {
+        return idVlt;
+    }
+
+    public void setIdVlt(int idVlt) {
+        this.idVlt = idVlt;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getCodigo() {
+        return codigo;
+    }
+
+    public void setCodigo(String codigo) {
+        this.codigo = codigo;
+    }
+
+    public String getLocalizacao() {
+        return localizacao;
+    }
+
+    public void setLocalizacao(String localizacao) {
+        this.localizacao = localizacao;
+    }
+
+    public List<Viagem> getViagens() {
+        return viagens;
+    }
+
+    public void setViagens(List<Viagem> viagens) {
+        this.viagens = viagens;
+    }
 }
 
 

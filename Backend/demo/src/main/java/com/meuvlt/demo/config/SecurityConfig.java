@@ -34,7 +34,7 @@ public class SecurityConfig {
                     corsConfig.addAllowedOriginPattern("*");
                     corsConfig.addAllowedHeader("*");
                     corsConfig.addAllowedMethod("*");
-//                   // corsConfig.setAllowCredentials(true);
+                    corsConfig.setAllowCredentials(true);
                     return corsConfig;
                 }))
 
@@ -58,10 +58,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/estacoes/**").hasAuthority("Administrador")
                         .requestMatchers(HttpMethod.DELETE, "/estacoes/**").hasAuthority("Administrador")
 
+                        .requestMatchers("/vlt/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/vlt/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/vlt/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.PUT, "/vlt/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.DELETE, "/vlt/**").hasAuthority("Administrador")
+
                         .requestMatchers("/usuarios/**").hasAuthority("Administrador")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 

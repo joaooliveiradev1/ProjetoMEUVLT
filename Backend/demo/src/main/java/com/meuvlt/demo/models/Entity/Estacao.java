@@ -18,13 +18,10 @@ public class Estacao {
     @Column(length = 200)
     private String endereco;
 
-    // RELAÇÃO CORRIGIDA
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_linha")
     private Linha linha;
 
-    @OneToMany(mappedBy = "estacao", cascade = CascadeType.ALL)
-    private List<Parada> paradas = new ArrayList<>();
 
     public Estacao() {}
 
@@ -68,13 +65,5 @@ public class Estacao {
         System.out.println("Linha recebida: " + (linha != null ? linha.getIdLinha() : "null"));
         this.linha = linha;
         System.out.println("Linha atribuída: " + (this.linha != null ? this.linha.getIdLinha() : "null"));
-    }
-
-    public List<Parada> getParadas() {
-        return paradas;
-    }
-
-    public void setParadas(List<Parada> paradas) {
-        this.paradas = paradas;
     }
 }

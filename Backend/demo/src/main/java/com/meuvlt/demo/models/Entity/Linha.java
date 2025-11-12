@@ -20,9 +20,6 @@ public class Linha {
     @Column(length = 20)
     private String numero;
 
-    @OneToMany(mappedBy = "linha", cascade = CascadeType.ALL)
-    private List<Parada> paradas = new ArrayList<>();
-
     @OneToMany(mappedBy = "linha")
     private List<Viagem> viagens = new ArrayList<>();
 
@@ -57,15 +54,5 @@ public class Linha {
     public void setViagens(List<Viagem> viagens) {
         this.viagens = viagens;
     }
-
-    public List<Parada> getParadas() {
-        return paradas;
-    }
-
-    public void setParadas(List<Parada> paradas) {
-        this.paradas = paradas;
-    }
-
-
 }
 
