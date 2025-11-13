@@ -26,4 +26,52 @@ public class Avaliacao {
     @ManyToOne
     @JoinColumn(name = "id_viagem")
     private Viagem viagem;
+
+    public int getIdAvaliacao() {
+        return idAvaliacao;
+    }
+
+    public void setIdAvaliacao(int idAvaliacao) {
+        this.idAvaliacao = idAvaliacao;
+    }
+
+    public Integer getNota() {
+        return nota;
+    }
+
+    public void setNota(Integer nota) {
+        this.nota = nota;
+    }
+
+    public String getComentario() {
+        return comentario;
+    }
+
+    public void setComentario(String comentario) {
+        this.comentario = comentario;
+    }
+
+    public LocalDateTime getDataHora() {
+        return dataHora;
+    }
+
+    public void setDataHora(LocalDateTime dataHora) {
+        this.dataHora = dataHora;
+    }
+
+    public Usuario getUsuarioPassageiro() {
+        return usuarioPassageiro;
+    }
+
+    public void setUsuarioPassageiro(Usuario usuarioPassageiro) {
+        this.usuarioPassageiro = usuarioPassageiro;
+    }
+
+    public Viagem getViagem() {
+        return viagem;
+    }
+
+    public void setViagem(Viagem viagem) {
+        this.viagem = viagem;
+    }
 }
