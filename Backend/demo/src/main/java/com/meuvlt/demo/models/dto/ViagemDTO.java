@@ -14,4 +14,76 @@ public class ViagemDTO {
     private String vltCodigo;
     private int linhaId;
     private String linhaNome;
+
+    public int getIdViagem() {
+        return idViagem;
+    }
+
+    public void setIdViagem(int idViagem) {
+        this.idViagem = idViagem;
+    }
+
+    public LocalDateTime getDataHoraInicio() {
+        return dataHoraInicio;
+    }
+
+    public void setDataHoraInicio(LocalDateTime dataHoraInicio) {
+        this.dataHoraInicio = dataHoraInicio;
+    }
+
+    public LocalDateTime getDataHoraFim() {
+        return dataHoraFim;
+    }
+
+    public void setDataHoraFim(LocalDateTime dataHoraFim) {
+        this.dataHoraFim = dataHoraFim;
+    }
+
+    public int getCondutorId() {
+        return condutorId;
+    }
+
+    public void setCondutorId(int condutorId) {
+        this.condutorId = condutorId;
+    }
+
+    public String getCondutorNome() {
+        return condutorNome;
+    }
+
+    public void setCondutorNome(String condutorNome) {
+        this.condutorNome = condutorNome;
+    }
+
+    public int getVltId() {
+        return vltId;
+    }
+
+    public void setVltId(int vltId) {
+        this.vltId = vltId;
+    }
+
+    public String getVltCodigo() {
+        return vltCodigo;
+    }
+
+    public void setVltCodigo(String vltCodigo) {
+        this.vltCodigo = vltCodigo;
+    }
+
+    public int getLinhaId() {
+        return linhaId;
+    }
+
+    public void setLinhaId(int linhaId) {
+        this.linhaId = linhaId;
+    }
+
+    public String getLinhaNome() {
+        return linhaNome;
+    }
+
+    public void setLinhaNome(String linhaNome) {
+        this.linhaNome = linhaNome;
+    }
 }
