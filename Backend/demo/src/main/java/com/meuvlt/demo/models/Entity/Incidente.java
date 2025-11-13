@@ -34,6 +34,60 @@ public class Incidente {
     @OneToMany(mappedBy = "incidente")
     private List<Alerta> alertas = new ArrayList<>();
 
-    // Construtores, getters e setters
+    public List<Alerta> getAlertas() {
+        return alertas;
+    }
+
+    public void setAlertas(List<Alerta> alertas) {
+        this.alertas = alertas;
+    }
+
+    public int getIdIncidente() {
+        return idIncidente;
+    }
+
+    public void setIdIncidente(int idIncidente) {
+        this.idIncidente = idIncidente;
+    }
+
+    public LocalDateTime getDataHora() {
+        return dataHora;
+    }
+
+    public void setDataHora(LocalDateTime dataHora) {
+        this.dataHora = dataHora;
+    }
+
+    public String getDescricao() {
+        return descricao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Condutor getCondutor() {
+        return condutor;
+    }
+
+    public void setCondutor(Condutor condutor) {
+        this.condutor = condutor;
+    }
+
+    public Viagem getViagem() {
+        return viagem;
+    }
+
+    public void setViagem(Viagem viagem) {
+        this.viagem = viagem;
+    }
 }
 
