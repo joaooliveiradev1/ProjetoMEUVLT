@@ -71,8 +71,8 @@ export default function AuthPage() {
 
   return (
     <>
-      <div className="flex-1 flex items-center bg-gradient-to-r from-slate-500 to-slate-800 justify-center p-4 ">
-        <Tabs className="w-full max-w-md pb-35" defaultValue="account">
+      <div className="flex-1 flex items-center bg-slate-200 justify-center p-4 ">
+        <Tabs className="w-full pt-15 max-w-md pb-35" defaultValue="account">
 
           <TabsList>
             <TabsTrigger value="account">Login</TabsTrigger>

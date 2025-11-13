@@ -8,7 +8,7 @@ export default function Home() {
     
     <main className="flex-1 bg-white text-gray-800">
     
-      <div className="container mx-auto px-4 bg-gradient-to-r from-slate-500 to-slate-800 h-140 sm:px-6 lg:px-8 py-16">
+      <div className="w-full mx-auto px-4 bg-gradient-to-r from-slate-500 to-slate-800 h-140 sm:px-6 lg:px-8 py-16">
         
        
         <section className="flex flex-col from-teal-200 to-teal-500 md:flex-row items-center gap-12 mb-20 ">
