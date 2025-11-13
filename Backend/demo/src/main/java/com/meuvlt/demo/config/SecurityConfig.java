@@ -34,13 +34,18 @@ public class SecurityConfig {
                     corsConfig.addAllowedOriginPattern("*");
                     corsConfig.addAllowedHeader("*");
                     corsConfig.addAllowedMethod("*");
+                    corsConfig.addExposedHeader("Authorization");
+                    corsConfig.addExposedHeader("Content-Type");
+                    corsConfig.addExposedHeader("X-Requested-With");
                     corsConfig.setAllowCredentials(true);
+                    corsConfig.setMaxAge(3600L);
                     return corsConfig;
                 }))
 
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Adicionado para CORS preflight
                         .requestMatchers(
                                 "/auth/login",
                                 "/auth/register",
@@ -63,6 +68,37 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/vlt/**").hasAuthority("Administrador")
                         .requestMatchers(HttpMethod.PUT, "/vlt/**").hasAuthority("Administrador")
                         .requestMatchers(HttpMethod.DELETE, "/vlt/**").hasAuthority("Administrador")
+
+                        .requestMatchers("/incidente/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/incidente/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/incidente/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.PUT, "/incidente/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.DELETE, "/incidente/**").hasAuthority("Administrador")
+
+                        .requestMatchers("/alertas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/alertas/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/alertas/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.PUT, "/alertas/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.DELETE, "/alertas/**").hasAuthority("Administrador")
+
+
+                        .requestMatchers("/condutor/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/condutor/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/condutor/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.PUT, "/condutor/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.DELETE, "/condutor/**").hasAuthority("Administrador")
+
+                        .requestMatchers("/viagem/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/viagem/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/viagem/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.PUT, "/viagem/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.DELETE, "/viagem/**").hasAuthority("Administrador")
+
+                        .requestMatchers("/avaliacao/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/avaliacao/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/avaliacao/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/avaliacao/**").hasAuthority("Administrador")
+                        .requestMatchers(HttpMethod.DELETE, "/avaliacao/**").hasAuthority("Administrador")
 
                         .requestMatchers("/usuarios/**").hasAuthority("Administrador")
 
