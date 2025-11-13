@@ -59,7 +59,7 @@ export default function LinhasPage() {
       setEstacoes(estacoesData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
-      alert("Erro ao carregar dados. Verifique o console.");
+      alert("Erro ao carregar dados. Verifique se o servidor está no Ar!");
     } finally {
       setLoading(false);
     }
