@@ -26,7 +26,7 @@ export default function Nav(){
                     </Link>
                     </li>
                 <li>
-                    <Link className="transition-colors duration-300 hover:text-blue-600" href={"/linhas"}>
+                    <Link className="transition-colors duration-300 hover:text-blue-600" href={"passageiro/linhas"}>
                     Linhas
                     </Link>
                     </li>
