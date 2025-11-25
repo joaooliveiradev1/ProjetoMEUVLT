@@ -1,6 +1,7 @@
 package com.meuvlt.demo.controller;
 
 import com.meuvlt.demo.models.Entity.Incidente;
+import com.meuvlt.demo.models.dto.IncidenteDTO; // Importante
 import com.meuvlt.demo.service.IncidenteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,14 @@ public class IncidenteController {
         return ResponseEntity.ok(incidenteService.listarTodos());
     }
 
+    // --- MUDANÇA CRÍTICA AQUI ---
+    // Retorna DTO para não quebrar o React com loop infinito
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<IncidenteDTO>> listarIncidentePorStatus(@PathVariable String status) {
+        return ResponseEntity.ok(incidenteService.listarPorStatusDTO(status));
+    }
+    // -----------------------------
+
     @GetMapping("/{id}")
     public ResponseEntity<Incidente> buscarIncidentePorId(@PathVariable Long id) {
         return ResponseEntity.ok(incidenteService.buscarPorId(id));
@@ -35,11 +44,6 @@ public class IncidenteController {
     @GetMapping("/condutor/{id}")
     public ResponseEntity<List<Incidente>> listarIncidentePorCondutor(@PathVariable Long id) {
         return ResponseEntity.ok(incidenteService.listarPorCondutor(id));
-    }
-
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<Incidente>> listarIncidentePorStatus(@PathVariable String status) {
-        return ResponseEntity.ok(incidenteService.listarPorStatus(status));
     }
 
     @PutMapping("/{id}/status/{novoStatus}")

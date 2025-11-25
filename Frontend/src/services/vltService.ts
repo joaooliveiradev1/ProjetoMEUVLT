@@ -1,18 +1,85 @@
 import api from "./api";
 
+// --- INTERFACES DE TIPO ---
+
+export interface Alerta {
+  idAlerta: number;
+  titulo: string;
+  mensagem: string;
+  dataHoraEnvio: string;
+  administradorNome?: string;
+  incidenteDescricao?: string;
+}
+
+export interface IncidenteView {
+  idIncidente: number;
+  descricao: string;
+  dataHora: string;
+  status: string;
+  condutorNome?: string;
+  viagemId?: number;
+}
+
+export interface CriarAlertaData {
+  titulo: string;
+  mensagem: string;
+  administradorId: number;
+}
+
 export interface LinhaData { 
   nome: string;
   numero: string;
 }
 
-// Funções que você já tinha
-export async function getLinhas() {
-  const response = await api.get("/api/linhas");
+// --- 1. ALERTAS (ADMIN & PASSAGEIRO) ---
+
+export async function getAlertas(): Promise<Alerta[]> {
+  try {
+    const response = await api.get("/alertas");
+    // Proteção: Garante que retorna array mesmo se vier null ou erro
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Erro ao buscar alertas:", error);
+    return [];
+  }
+}
+
+export async function createAlerta(data: CriarAlertaData) {
+  const response = await api.post("/alertas", data);
   return response.data;
 }
 
-export async function getEstacoes() {
-  const response = await api.get("/estacoes");
+export async function deleteAlerta(id: number) {
+  const response = await api.delete(`/alertas/${id}`);
+  return response.data;
+}
+
+// --- 2. INCIDENTES (FLUXO DE APROVAÇÃO) ---
+
+export async function getIncidentesPendentes(): Promise<IncidenteView[]> {
+  try {
+    const response = await api.get("/incidente/status/PENDENTE");
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Erro ao buscar incidentes pendentes", error);
+    return [];
+  }
+}
+
+export async function atualizarStatusIncidente(id: number, status: "PUBLICADO" | "REJEITADO") {
+  const response = await api.put(`/incidente/${id}/status/${status}`);
+  return response.data;
+}
+
+export async function createIncidente(data: any) {
+  const response = await api.post("/incidente", data);
+  return response.data;
+}
+
+// --- 3. LINHAS (CRUD) - *Faltava isso no seu arquivo* ---
+
+export async function getLinhas() {
+  const response = await api.get("/api/linhas");
   return response.data;
 }
 
@@ -31,38 +98,25 @@ export async function deleteLinha(id: number) {
   return response.data;
 }
 
+// --- 4. ESTAÇÕES ---
 
-// --- NOVAS FUNÇÕES PARA O FLUXO DE ALERTA ---
-
-// Para o Condutor enviar o incidente
-export async function createIncidente(data: any) {
-  // O backend espera um POST para /incidente
-  //
-  const response = await api.post("/incidente", data);
+export async function getEstacoes() {
+  const response = await api.get("/estacoes");
   return response.data;
 }
 
-// Para o Passageiro receber os alertas
-export async function getAlertas() {
-  // O backend expõe os alertas em GET /alertas
-  //
-  const response = await api.get("/alertas");
-  return response.data;
-}
-
-// --- FUNÇÕES DE USUÁRIO E PERFIL ---
+// --- 5. USUÁRIOS E PERFIL ---
 
 export async function getUsuarioById(id: number) {
-  const response = await api.get(`/usuarios/${id}`); // O endpoint existe no backend
+  const response = await api.get(`/usuarios/${id}`);
   return response.data;
 }
 
-export async function updateUsuario(id: number, data: { nome: string; email: string; senha?: string }) {
+export async function updateUsuario(id: number, data: any) {
   const response = await api.put(`/usuarios/${id}`, data);
   return response.data;
 }
 
-// Buscar dados específicos do condutor (matricula, estatisticas)
 export async function getCondutorById(id: number) {
     const response = await api.get(`/condutor/${id}`);
     return response.data;
