@@ -39,12 +39,12 @@ interface Linha {
   numero: string;
 }
 
-// Função de API mockada para enviar alerta
+
 async function enviarAlertaAPI(alertaData: any) {
   console.log("Enviando alerta:", alertaData);
-  // Simula uma chamada de API
+  
   await new Promise(resolve => setTimeout(resolve, 1000));
-  // Em um app real: await api.post("/alertas", alertaData);
+  
   return { success: true };
 }
 
@@ -54,7 +54,7 @@ export default function CondutorOperacaoPage() {
   const [loading, setLoading] = useState(true);
   const [linhaEmOperacao, setLinhaEmOperacao] = useState<Linha | null>(null);
 
-  // Estado do modal de alerta
+  
   const [tipoAlerta, setTipoAlerta] = useState("");
   const [descAlerta, setDescAlerta] = useState("");
   const [isSubmittingAlert, setIsSubmittingAlert] = useState(false);
@@ -98,7 +98,7 @@ export default function CondutorOperacaoPage() {
         descricao: descAlerta,
       });
       alert("Alerta enviado com sucesso!");
-      // Resetar e fechar modal (aqui usamos o <AlertDialogAction> que fecha)
+      
       setTipoAlerta("");
       setDescAlerta("");
     } catch (error) {
@@ -113,15 +113,15 @@ export default function CondutorOperacaoPage() {
     return <p className="text-center p-12">Carregando linhas disponíveis...</p>;
   }
 
-  // TELA 2: Condutor EM OPERAÇÃO
+  
   if (linhaEmOperacao) {
     return (
       <main className="container mx-auto px-6 py-12">
-        <Card className="max-w-2xl mx-auto border-l-4 border-l-blue-600">
+        <Card className="max-w-2xl mx-auto border-l-4 border-l-black -600">
           <CardHeader>
             <CardTitle className="flex justify-between items-center">
               <span>Painel de Operação</span>
-              <Badge className="bg-blue-600 text-white hover:bg-blue-700">
+              <Badge className="bg-black -600 text-white hover:bg-blue-700">
                 Em Operação
               </Badge>
             </CardTitle>
@@ -131,7 +131,7 @@ export default function CondutorOperacaoPage() {
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            {/* Botão de Alerta */}
+           
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" className="h-20 text-lg">
@@ -194,7 +194,7 @@ export default function CondutorOperacaoPage() {
     );
   }
 
-  // TELA 1: Condutor escolhe a linha
+  
   return (
     <main className="container mx-auto px-6 py-12">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
@@ -212,7 +212,7 @@ export default function CondutorOperacaoPage() {
               <CardDescription>Código: {linha.numero}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1">
-              {/* Aqui poderiam ir mais detalhes, como a escala */}
+              
               <p className="text-sm text-gray-500">Pronto para iniciar.</p>
             </CardContent>
             

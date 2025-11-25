@@ -49,3 +49,21 @@ export async function getAlertas() {
   const response = await api.get("/alertas");
   return response.data;
 }
+
+// --- FUNÇÕES DE USUÁRIO E PERFIL ---
+
+export async function getUsuarioById(id: number) {
+  const response = await api.get(`/usuarios/${id}`); // O endpoint existe no backend
+  return response.data;
+}
+
+export async function updateUsuario(id: number, data: { nome: string; email: string; senha?: string }) {
+  const response = await api.put(`/usuarios/${id}`, data);
+  return response.data;
+}
+
+// Buscar dados específicos do condutor (matricula, estatisticas)
+export async function getCondutorById(id: number) {
+    const response = await api.get(`/condutor/${id}`);
+    return response.data;
+}

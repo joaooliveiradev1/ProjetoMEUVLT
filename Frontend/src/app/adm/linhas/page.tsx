@@ -157,7 +157,7 @@ export default function AdminLinhasPage() {
               />
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="numero">Número/Código</Label>
+              <Label htmlFor="numero">Número</Label>
               <Input
                 id="numero"
                 placeholder="Ex: VLT-01"
@@ -185,7 +185,7 @@ export default function AdminLinhasPage() {
         </form>
       </Card>
 
-      {/* Listagem de Linhas */}
+      
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">
         Linhas Cadastradas
       </h2>
@@ -206,7 +206,7 @@ export default function AdminLinhasPage() {
               >
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h2 className="text-2xl font-semibold text-blue-600">
+                    <h2 className="text-2xl font-semibold text-balck -600">
                       {linha.nome}
                     </h2>
                     <p className="text-gray-500 text-sm">
@@ -214,7 +214,7 @@ export default function AdminLinhasPage() {
                     </p>
                   </div>
                   
-                  {/* Botões de Ação do Admin */}
+                
                   <div className="flex gap-2">
                     <Button
                       variant="outline"

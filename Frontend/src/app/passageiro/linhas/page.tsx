@@ -66,7 +66,7 @@ export default function PassageiroLinhasPage() {
       ]);
       setLinhas(linhasData);
       setEstacoes(estacoesData);
-      setAlertas(alertasData); // Salva os alertas no estado
+      setAlertas(alertasData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     } finally {
