@@ -1,15 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getLinhas } from "@/services/vltService";
+import { getLinhas, createIncidente } from "@/services/vltService"; // Importar a função real
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,205 +15,191 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { PlayCircle, AlertTriangle, Send, LogOut, Clock } from "lucide-react";
+import { PlayCircle, AlertTriangle, LogOut, Clock, TrainFront } from "lucide-react";
 
-interface Linha {
-  idLinha: number;
-  nome: string;
-  numero: string;
-}
-
-
-async function enviarAlertaAPI(alertaData: any) {
-  console.log("Enviando alerta:", alertaData);
-  
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return { success: true };
-}
-
+interface Linha { idLinha: number; nome: string; numero: string; }
 
 export default function CondutorOperacaoPage() {
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [loading, setLoading] = useState(true);
   const [linhaEmOperacao, setLinhaEmOperacao] = useState<Linha | null>(null);
 
-  
+  // Estado do Alerta
   const [tipoAlerta, setTipoAlerta] = useState("");
   const [descAlerta, setDescAlerta] = useState("");
   const [isSubmittingAlert, setIsSubmittingAlert] = useState(false);
 
-  async function fetchData() {
-    try {
-      const linhasData = await getLinhas();
-      setLinhas(linhasData);
-    } catch (error) {
-      console.error("Erro ao carregar linhas:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // ID do condutor fixo para teste (em prod viria do token)
+  const CONDUTOR_ID = 1; 
 
   useEffect(() => {
+    async function fetchData() {
+      try {
+        const linhasData = await getLinhas();
+        setLinhas(linhasData);
+      } catch (error) {
+        console.error("Erro ao carregar linhas", error);
+      } finally {
+        setLoading(false);
+      }
+    }
     fetchData();
   }, []);
 
   const handleIniciarViagem = (linha: Linha) => {
-    if (window.confirm(`Tem certeza que deseja iniciar a viagem na linha ${linha.nome}?`)) {
+    if (window.confirm(`Iniciar viagem na linha ${linha.nome}?`)) {
       setLinhaEmOperacao(linha);
     }
   };
 
   const handleEncerrarViagem = () => {
-    setLinhaEmOperacao(null);
+    if(confirm("Encerrar operação atual?")) setLinhaEmOperacao(null);
   };
 
-  const handleEnviarAlerta = async () => {
+  // FUNÇÃO PRINCIPAL: ENVIAR INCIDENTE PARA A API
+  const handleEnviarIncidente = async () => {
     if (!tipoAlerta || !descAlerta) {
-      alert("Por favor, preencha o tipo e a descrição do alerta.");
+      alert("Preencha o tipo e a descrição.");
       return;
     }
     
     setIsSubmittingAlert(true);
     try {
-      await enviarAlertaAPI({
-        idLinha: linhaEmOperacao?.idLinha,
-        tipo: tipoAlerta,
-        descricao: descAlerta,
+      // Chama o serviço real
+      // O backend vai receber isso, salvar o incidente E criar um Alerta automaticamente
+      await createIncidente({
+        condutorId: CONDUTOR_ID,
+        descricao: `[${tipoAlerta}] ${descAlerta} - Linha: ${linhaEmOperacao?.nome}`,
+        // Se tiver viagemId, enviar aqui
       });
-      alert("Alerta enviado com sucesso!");
-      
+
+      alert("Incidente reportado e alerta gerado com sucesso!");
       setTipoAlerta("");
       setDescAlerta("");
     } catch (error) {
-      console.error("Erro ao enviar alerta:", error);
-      alert("Erro ao enviar alerta.");
+      console.error("Erro API:", error);
+      alert("Erro ao reportar incidente. Tente novamente.");
     } finally {
       setIsSubmittingAlert(false);
     }
   };
 
-  if (loading) {
-    return <p className="text-center p-12">Carregando linhas disponíveis...</p>;
-  }
+  if (loading) return <p className="text-center p-12">Carregando dados...</p>;
 
-  
+  // --- TELA DE OPERAÇÃO ATIVA ---
   if (linhaEmOperacao) {
     return (
-      <main className="container mx-auto px-6 py-12">
-        <Card className="max-w-2xl mx-auto border-l-4 border-l-black -600">
-          <CardHeader>
-            <CardTitle className="flex justify-between items-center">
-              <span>Painel de Operação</span>
-              <Badge className="bg-black -600 text-white hover:bg-blue-700">
-                Em Operação
-              </Badge>
-            </CardTitle>
-            <CardDescription>
-              Linha: <span className="font-semibold text-gray-800">{linhaEmOperacao.nome} ({linhaEmOperacao.numero})</span>
-            </CardDescription>
+      <main className="container mx-auto px-6 py-10">
+        <Card className="max-w-3xl mx-auto border-l-4 border-l-green-500 shadow-lg">
+          <CardHeader className="bg-slate-50 rounded-t-lg">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-xl">Painel de Operação Ativo</CardTitle>
+                <CardDescription className="mt-1">
+                  Você está operando a linha <span className="font-bold text-gray-900">{linhaEmOperacao.nome}</span>
+                </CardDescription>
+              </div>
+              <Badge className="bg-green-600 text-white px-3 py-1 animate-pulse">EM OPERAÇÃO</Badge>
+            </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <CardContent className="p-6 space-y-6">
             
-           
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="h-20 text-lg">
-                  <AlertTriangle className="h-5 w-5 mr-2" /> Reportar Incidente
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Reportar Novo Incidente</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    O alerta será enviado aos passageiros e administradores.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="tipo-alerta">Tipo de Alerta</Label>
-                    <Select value={tipoAlerta} onValueChange={setTipoAlerta}>
-                      <SelectTrigger id="tipo-alerta">
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ATRASO">Atraso</SelectItem>
-                        <SelectItem value="INCIDENTE">Incidente Técnico</SelectItem>
-                        <SelectItem value="MANUTENCAO">Manutenção</SelectItem>
-                        <SelectItem value="SEGURANCA">Segurança</SelectItem>
-                      </SelectContent>
-                    </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* BOTÃO DE INCIDENTE (PRINCIPAL) */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="h-24 text-lg w-full shadow-sm hover:shadow-md transition-all">
+                    <div className="flex flex-col items-center gap-2">
+                      <AlertTriangle className="h-8 w-8" /> 
+                      REPORTAR INCIDENTE
+                    </div>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5"/> Reportar Ocorrência
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Isso gerará um alerta automático para todos os passageiros e para o CCO.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label>Classificação</Label>
+                      <Select value={tipoAlerta} onValueChange={setTipoAlerta}>
+                        <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ATRASO">Atraso / Lentidão</SelectItem>
+                          <SelectItem value="FALHA_TECNICA">Falha no Trem/Via</SelectItem>
+                          <SelectItem value="ACIDENTE">Acidente / Colisão</SelectItem>
+                          <SelectItem value="SEGURANCA">Segurança Pública</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Descrição</Label>
+                      <Input 
+                        placeholder="Detalhe o ocorrido (ex: Ar condicionado falhou no carro 2)" 
+                        value={descAlerta}
+                        onChange={(e) => setDescAlerta(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="desc-alerta">Descrição Breve</Label>
-                    <Input 
-                      id="desc-alerta" 
-                      placeholder="Ex: Falha no ar condicionado VLT-04" 
-                      value={descAlerta}
-                      onChange={(e) => setDescAlerta(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleEnviarAlerta} disabled={isSubmittingAlert}>
-                    {isSubmittingAlert ? "Enviando..." : "Enviar Alerta"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleEnviarIncidente} disabled={isSubmittingAlert} className="bg-red-600 hover:bg-red-700">
+                      {isSubmittingAlert ? "Enviando..." : "Confirmar e Alertar"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
-            <Button variant="secondary" className="h-20 text-lg" disabled>
-              <Clock className="h-5 w-5 mr-2" /> Comunicar Atraso (Em breve)
-            </Button>
-            
+              <Button variant="secondary" className="h-24 text-lg w-full border border-slate-200" disabled>
+                <div className="flex flex-col items-center gap-2 text-slate-500">
+                  <Clock className="h-8 w-8" /> 
+                  Registrar Parada
+                </div>
+              </Button>
+            </div>
+
+            <div className="pt-6 border-t border-gray-100">
+               <Button variant="outline" onClick={handleEncerrarViagem} className="w-full text-red-600 hover:text-red-700 hover:bg-red-50">
+                 <LogOut className="h-4 w-4 mr-2" /> Finalizar Viagem e Sair
+               </Button>
+            </div>
           </CardContent>
-          
-             <Button variant="outline" onClick={handleEncerrarViagem} className="w-full">
-               <LogOut className="h-4 w-4 mr-2" /> Encerrar Viagem
-             </Button>
-          
         </Card>
       </main>
     );
   }
 
-  
+  // --- TELA DE SELEÇÃO DE LINHA ---
   return (
     <main className="container mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">
-        Iniciar Viagem
-      </h1>
-      <p className="text-lg text-gray-600 mb-8 max-w-2xl">
-        Selecione a linha que você está iniciando para ativar seu painel de operação.
-      </p>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">Iniciar Operação</h1>
+      <p className="text-gray-500 mb-8">Selecione a linha para abrir o painel de controle.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {linhas.map((linha) => (
-          <Card key={linha.idLinha} className="flex flex-col">
+          <Card key={linha.idLinha} className="hover:border-blue-400 transition-colors group cursor-pointer" onClick={() => handleIniciarViagem(linha)}>
             <CardHeader>
-              <CardTitle>{linha.nome}</CardTitle>
-              <CardDescription>Código: {linha.numero}</CardDescription>
+              <CardTitle className="flex justify-between items-center">
+                {linha.nome}
+                <TrainFront className="h-5 w-5 text-slate-300 group-hover:text-blue-500" />
+              </CardTitle>
+              <CardDescription>ID: {linha.numero}</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1">
-              
-              <p className="text-sm text-gray-500">Pronto para iniciar.</p>
-            </CardContent>
-            
-              <Button className="w-full" onClick={() => handleIniciarViagem(linha)}>
-                <PlayCircle className="h-5 w-5 mr-2" /> Iniciar Viagem
+            <CardContent>
+              <Button className="w-full gap-2">
+                <PlayCircle className="h-4 w-4" /> Iniciar
               </Button>
-           
+            </CardContent>
           </Card>
         ))}
       </div>
