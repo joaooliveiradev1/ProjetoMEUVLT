@@ -94,6 +94,7 @@ export default function GerenciarAlertasPage() {
     finally { setIsSubmitting(false); }
   };
 
+  
   const handleDeletarAlerta = async (id: number) => {
     if(confirm("Apagar este alerta?")) {
       await deleteAlerta(id);
