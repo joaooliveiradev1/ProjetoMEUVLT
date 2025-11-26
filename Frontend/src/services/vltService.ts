@@ -1,6 +1,6 @@
 import api from "./api";
 
-// --- INTERFACES DE TIPO ---
+// --- INTERFACES ---
 
 export interface Alerta {
   idAlerta: number;
@@ -31,12 +31,20 @@ export interface LinhaData {
   numero: string;
 }
 
+// Adicionando interface completa para Condutor
+export interface Condutor {
+  idCondutor: number;
+  matricula: string;
+  usuarioId: number;
+  usuarioNome: string;
+  usuarioEmail: string; // Essencial para a comparação
+}
+
 // --- 1. ALERTAS (ADMIN & PASSAGEIRO) ---
 
 export async function getAlertas(): Promise<Alerta[]> {
   try {
     const response = await api.get("/alertas");
-    // Proteção: Garante que retorna array mesmo se vier null ou erro
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error("Erro ao buscar alertas:", error);
@@ -76,7 +84,7 @@ export async function createIncidente(data: any) {
   return response.data;
 }
 
-// --- 3. LINHAS (CRUD) - *Faltava isso no seu arquivo* ---
+// --- 3. LINHAS (CRUD) ---
 
 export async function getLinhas() {
   const response = await api.get("/api/linhas");
@@ -105,7 +113,7 @@ export async function getEstacoes() {
   return response.data;
 }
 
-// --- 5. USUÁRIOS E PERFIL ---
+// --- 5. USUÁRIOS E CONDUTORES ---
 
 export async function getUsuarioById(id: number) {
   const response = await api.get(`/usuarios/${id}`);
@@ -120,4 +128,15 @@ export async function updateUsuario(id: number, data: any) {
 export async function getCondutorById(id: number) {
     const response = await api.get(`/condutor/${id}`);
     return response.data;
+}
+
+// Nova função para pegar todos e filtrar no front
+export async function getAllCondutores(): Promise<Condutor[]> {
+    try {
+        const response = await api.get("/condutor");
+        return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+        console.error("Erro ao buscar condutores", error);
+        return [];
+    }
 }
