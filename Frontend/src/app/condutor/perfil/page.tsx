@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCondutorByEmail, updateUsuario } from "@/services/vltService"; // Usando a nova função
+import { getCondutorByEmail, updateUsuario, getViagensDoCondutor } from "@/services/vltService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrainFront, Save, Award } from "lucide-react";
 
 export default function CondutorPerfilPage() {
+  const [totalViagens, setTotalViagens] = useState(0);
   const [loading, setLoading] = useState(true);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -27,13 +28,17 @@ export default function CondutorPerfilPage() {
         const jsonPayload = JSON.parse(decodeURIComponent(window.atob(base64Url.replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
         const userEmail = jsonPayload.sub;
 
-        // Busca dados completos do condutor pelo email
         const data = await getCondutorByEmail(userEmail);
-        
+
         setUserId(data.usuarioId);
         setNome(data.usuarioNome);
         setEmail(data.usuarioEmail);
         setMatricula(data.matricula);
+
+        if (data.idCondutor) {
+          const viagens = await getViagensDoCondutor(data.idCondutor);
+          setTotalViagens(viagens.length);
+        }
 
       } catch (error) {
         console.error("Erro ao carregar perfil condutor:", error);
@@ -47,7 +52,6 @@ export default function CondutorPerfilPage() {
   const handleSave = async () => {
       if(!userId) return;
       try {
-        // Atualiza apenas os dados do usuário (nome/email), matrícula é fixa
         await updateUsuario(userId, { nome, email });
         alert("Dados atualizados!");
       } catch(e) { alert("Erro ao atualizar"); }
@@ -107,7 +111,7 @@ export default function CondutorPerfilPage() {
             <Card className="bg-slate-50 border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-6">
                     <TrainFront className="h-8 w-8 text-blue-500 mb-2" />
-                    <span className="text-2xl font-bold">--</span>
+                    <span className="text-2xl font-bold">{totalViagens}</span>
                     <span className="text-xs text-gray-500">Viagens Realizadas</span>
                 </CardContent>
             </Card>
