@@ -32,36 +32,65 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(request -> {
                     var config = new org.springframework.web.cors.CorsConfiguration();
-
                     config.setAllowedOrigins(List.of("http://localhost:3000"));
                     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     config.setAllowedHeaders(List.of("*"));
                     config.setExposedHeaders(List.of("Authorization"));
                     config.setAllowCredentials(true);
-
                     return config;
                 }))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
                         // ============================================================
-                        // ✅ PÚBLICOS - SEM AUTENTICAÇÃO
+                        // 1️⃣ PREFLIGHT - OPTIONS sempre permitido
                         // ============================================================
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
 
                         // ============================================================
-                        // ⭐ USUÁRIOS - Edição e perfil
+                        // 2️⃣ AUTH - Login/Register sem autenticação
                         // ============================================================
-                        // Qualquer autenticado pode editar seu perfil
+                        .requestMatchers("/auth/**").permitAll()
+
+                        // ============================================================
+                        // 3️⃣ GET PÚBLICOS - Dados legíveis por todos
+                        // ============================================================
+                        .requestMatchers(HttpMethod.GET, "/linhas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/estacoes/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/linhas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/avaliacao/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/alertas/**").permitAll()
+
+                        // ============================================================
+                        // 4️⃣ GET USUÁRIOS - Apenas autenticados
+                        // ============================================================
+                        .requestMatchers(HttpMethod.GET, "/usuarios/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/usuario/**").authenticated()
+
+                        // ============================================================
+                        // 5️⃣ GET CONDUTOR - Apenas autenticados
+                        // ============================================================
+                        .requestMatchers(HttpMethod.GET, "/condutor/**").authenticated()
+
+                        // ============================================================
+                        // 6️⃣ GET VIAGEM - Apenas autenticados
+                        // ============================================================
+                        .requestMatchers(HttpMethod.GET, "/viagem/**").authenticated()
+
+                        // ============================================================
+                        // 7️⃣ GET VLT - Apenas autenticados
+                        // ============================================================
+                        .requestMatchers(HttpMethod.GET, "/vlt/**").authenticated()
+
+                        // ============================================================
+                        // ⭐ USUÁRIOS - PUT (editar perfil próprio)
+                        // ============================================================
                         .requestMatchers(HttpMethod.PUT, "/usuarios/**").authenticated()
-                        // Apenas Admin pode deletar usuários
                         .requestMatchers(HttpMethod.DELETE, "/usuarios/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
                         // ============================================================
-                        // ⭐ ALERTA - Admin apenas
+                        // ⭐ ALERTAS - Admin apenas
                         // ============================================================
                         .requestMatchers(HttpMethod.POST, "/alertas/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
@@ -71,16 +100,11 @@ public class SecurityConfig {
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
                         // ============================================================
-                        // ⭐ AVALIACAO - REMOVIDA (sem permissões)
+                        // ⭐ AVALIACAO - COMPLETAMENTE BLOQUEADA
                         // ============================================================
-                        // Nenhuma operação POST/PUT/DELETE permitida
-                        // Se tentar: 403 Forbidden
-                        .requestMatchers(HttpMethod.POST, "/avaliacao/**")
-                        .denyAll()
-                        .requestMatchers(HttpMethod.PUT, "/avaliacao/**")
-                        .denyAll()
-                        .requestMatchers(HttpMethod.DELETE, "/avaliacao/**")
-                        .denyAll()
+                        .requestMatchers(HttpMethod.POST, "/avaliacao/**").denyAll()
+                        .requestMatchers(HttpMethod.PUT, "/avaliacao/**").denyAll()
+                        .requestMatchers(HttpMethod.DELETE, "/avaliacao/**").denyAll()
 
                         // ============================================================
                         // ⭐ CONDUTOR - Admin apenas
@@ -103,15 +127,12 @@ public class SecurityConfig {
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
                         // ============================================================
-                        // ⭐ INCIDENTE - Apenas Condutor cria, Admin aprova/rejeita/deleta
+                        // ⭐ INCIDENTE - Condutor cria, Admin aprova/rejeita/deleta
                         // ============================================================
-                        // ✅ APENAS CONDUTOR pode criar incidente
                         .requestMatchers(HttpMethod.POST, "/incidente/**")
-                        .hasAnyAuthority("ROLE_Condutor", "Condutor")
-                        // Apenas Admin pode editar incidentes
+                        .hasAnyAuthority("ROLE_Condutor", "Condutor", "ROLE_Administrador", "Administrador")
                         .requestMatchers(HttpMethod.PUT, "/incidente/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
-                        // Apenas Admin pode deletar incidentes
                         .requestMatchers(HttpMethod.DELETE, "/incidente/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
@@ -125,7 +146,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/linhas/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
-                        // Rota alternativa para /api/linhas (se houver)
                         .requestMatchers(HttpMethod.POST, "/api/linhas/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
                         .requestMatchers(HttpMethod.PUT, "/api/linhas/**")
@@ -134,15 +154,12 @@ public class SecurityConfig {
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
                         // ============================================================
-                        // ⭐ VIAGEM - Apenas Admin cria, Admin edita/deleta
+                        // ⭐ VIAGEM - Admin apenas
                         // ============================================================
-                        // ✅ APENAS ADMIN pode criar viagem
                         .requestMatchers(HttpMethod.POST, "/viagem/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
-                        // Apenas Admin pode editar viagem
                         .requestMatchers(HttpMethod.PUT, "/viagem/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
-                        // Apenas Admin pode deletar viagem
                         .requestMatchers(HttpMethod.DELETE, "/viagem/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
@@ -157,17 +174,7 @@ public class SecurityConfig {
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
                         // ============================================================
-                        // ⭐ FALLBACK - Qualquer outra rota POST/PUT/DELETE precisa ser Admin
-                        // ============================================================
-                        .requestMatchers(HttpMethod.POST, "/**")
-                        .hasAnyAuthority("ROLE_Administrador", "Administrador")
-                        .requestMatchers(HttpMethod.PUT, "/**")
-                        .hasAnyAuthority("ROLE_Administrador", "Administrador")
-                        .requestMatchers(HttpMethod.DELETE, "/**")
-                        .hasAnyAuthority("ROLE_Administrador", "Administrador")
-
-                        // ============================================================
-                        // ✅ FINAL - Tudo que não foi especificado requer autenticação
+                        // ✅ FINAL - Qualquer outra rota requer autenticação
                         // ============================================================
                         .anyRequest().authenticated()
                 )

@@ -155,6 +155,7 @@ export async function atualizarStatusIncidente(
 }
 
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createIncidente(data: any) {
   const response = await api.post("/incidente", data);
   return response.data;
@@ -213,7 +214,7 @@ export async function getUsuarioById(id: number) {
   return response.data;
 }
 
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updateUsuario(id: number, data: any) {
   const response = await api.put(`/usuarios/${id}`, data);
   return response.data;
@@ -411,4 +412,14 @@ export async function atualizarStatusViagem(
     console.error(`Erro ao atualizar status da viagem ${idViagem}:`, error);
     throw error;
   }
+}
+
+export async function getUsuarioByEmail(email: string) {
+  const response = await api.get(`usuarios/email/${email}`);
+  return response.data;
+}
+
+export async function getCondutorByEmail(email: string) {
+  const response = await api.get(`/condutor/email/${email}`);
+  return response.data;
 }
