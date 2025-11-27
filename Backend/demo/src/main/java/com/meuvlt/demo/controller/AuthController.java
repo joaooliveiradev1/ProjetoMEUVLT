@@ -79,4 +79,21 @@ public class AuthController {
         }
     }
 
+    // Adicione este endpoint na classe AuthController
+    @PostMapping("/recover-password")
+    public ResponseEntity<?> recoverPassword(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String novaSenha = usuarioService.resetarSenha(email);
+
+            // Retorna a senha no JSON para o alerta do frontend
+            return ResponseEntity.ok(Map.of(
+                    "message", "Sucesso",
+                    "tempPassword", novaSenha
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Erro: " + e.getMessage()));
+        }
+    }
+
 }

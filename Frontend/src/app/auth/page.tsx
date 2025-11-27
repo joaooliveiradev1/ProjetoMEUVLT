@@ -1,23 +1,50 @@
 "use client"
 
 import { useState, FormEvent } from "react"
-// ... (seus imports permanecem iguais) ...
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
 import api from "@/services/api"
 import { TrainFront } from "lucide-react"
 
+// --- IMPORTS NOVOS PARA O MODAL ---
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog"
+
 export default function AuthPage() {
-  // ... (estados permanecem iguais) ...
+
   const [loginEmail, setLoginEmail] = useState("")
   const [loginSenha, setLoginSenha] = useState("")
+
   const [regEmail, setRegEmail] = useState("")
   const [regPassword, setRegPassword] = useState("")
   const [regName, setRegName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  // Estados para recuperação de senha
+  const [recoverEmail, setRecoverEmail] = useState("")
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -44,23 +71,19 @@ export default function AuthPage() {
         const payload = JSON.parse(jsonPayload);
         const role = payload.role;
         
-        // --- REDIRECIONAMENTO CRIPTOGRAFADO ---
         if (role === "ROLE_Administrador" || role === "Administrador") {
-          window.location.href = "/secure/v3/master"; // URL Admin
+          window.location.href = "/secure/v3/master"; 
         } else if (role === "ROLE_Condutor" || role === "Condutor") {
-          window.location.href = "/secure/v2/console"; // URL Condutor
+          window.location.href = " /secure/v2/console"; 
         } else {
-          window.location.href = "/secure/v1/dashboard"; // URL Passageiro
+          window.location.href = "/secure/v1/dashboard"; 
         }
-        // -------------------------------------
 
       } catch (decodeError) {
-        console.error("Erro token", decodeError);
         window.location.href = "/"; 
       }
 
     } catch (error: any) {
-      console.error("Erro no login:", error)
       const msg = error.response?.data?.error || "Erro ao fazer login.";
       alert(msg)
     } finally {
@@ -68,28 +91,43 @@ export default function AuthPage() {
     }
   }
 
-  // ... (o resto do componente handleRegister e o return permanecem iguais ao que você já tem) ...
   const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     try {
-      await api.post("/auth/register", { nome: regName, email: regEmail, senha: regPassword })
+      await api.post("/auth/register", {
+        nome: regName,
+        email: regEmail,
+        senha: regPassword,
+      })
       alert("Usuário registrado com sucesso! Faça login agora.")
-      setRegEmail(""); setRegPassword(""); setRegName("");
       window.location.reload();
     } catch (error: any) {
-      alert(error.response?.data?.error || "Erro ao registrar usuário.")
+      const msg = error.response?.data?.error || "Erro ao registrar usuário.";
+      alert(msg)
     } finally {
       setIsLoading(false)
     }
   }
 
+  // --- NOVA FUNÇÃO DE RECUPERAÇÃO ---
+  const handleRecover = async () => {
+    if(!recoverEmail) return;
+    try {
+        const res = await api.post("/auth/recover-password", { email: recoverEmail });
+        // Exibe a senha na tela (Modo Demo)
+        alert(`SUCESSO!\n\nSua senha temporária é: ${res.data.tempPassword}\n\nUse-a para entrar e troque depois.`);
+        setIsDialogOpen(false);
+    } catch (error: any) {
+        alert("Erro: " + (error.response?.data?.error || "Email não encontrado"));
+    }
+  }
+
   return (
-    // ... (seu JSX do return permanece exatamente igual) ...
     <div className="min-h-[calc(100vh-140px)] flex flex-col items-center justify-center bg-slate-50 p-4">
-      {/* ... conteúdo visual ... */}
+      
       <div className="mb-8 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-black -600 text-white mb-4">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-black text-white mb-4">
           <TrainFront className="h-6 w-6" />
         </div>
         <h1 className="text-2xl font-bold text-gray-900">Bem-vindo ao Meu VLT</h1>
@@ -97,16 +135,19 @@ export default function AuthPage() {
       </div>
 
       <Tabs className="w-full max-w-md" defaultValue="account">
+        
         <TabsList className="grid w-full grid-cols-2 h-12 mb-6 bg-white border shadow-sm">
           <TabsTrigger value="account">Login</TabsTrigger>
           <TabsTrigger value="password">Registro</TabsTrigger>
         </TabsList>
+
         <TabsContent value="account">
           <Card className="border-0 shadow-xl ring-1 ring-slate-900/5">
             <CardHeader className="space-y-1">
               <CardTitle className="text-xl text-center">Acessar conta</CardTitle>
               <CardDescription className="text-center">Entre com seu email e senha</CardDescription>
             </CardHeader>
+
             <CardContent className="grid gap-6">
               <form className="grid gap-4" onSubmit={handleLogin}>
                 <div className="grid gap-2">
@@ -120,9 +161,32 @@ export default function AuthPage() {
                 <Button type="submit" className="w-full h-10 mt-2 text-base" disabled={isLoading}>{isLoading ? "Entrando..." : "Entrar"}</Button>
               </form>
             </CardContent>
-            <CardFooter className="justify-center pb-6"><p className="text-xs text-gray-500">Esqueceu a senha? Contate o suporte.</p></CardFooter>
+            
+            <CardFooter className="justify-center pb-6">
+                {/* --- MODAL DE ESQUECEU SENHA --- */}
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="link" className="text-xs text-gray-500">Esqueceu a senha?</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Recuperar Senha</DialogTitle>
+                            <DialogDescription>Digite seu email para gerar uma nova senha provisória.</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <Label>Email cadastrado</Label>
+                            <Input value={recoverEmail} onChange={e => setRecoverEmail(e.target.value)} placeholder="seu@email.com" />
+                        </div>
+                        <DialogFooter>
+                            <Button onClick={handleRecover}>Gerar Nova Senha</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+                {/* ------------------------------- */}
+            </CardFooter>
           </Card>
         </TabsContent>
+
         <TabsContent value="password">
           <Card className="border-0 shadow-xl ring-1 ring-slate-900/5">
             <CardHeader className="space-y-1">
@@ -139,6 +203,7 @@ export default function AuthPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
       </Tabs>
     </div>
   )

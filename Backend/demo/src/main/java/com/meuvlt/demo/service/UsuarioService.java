@@ -113,4 +113,19 @@ public class UsuarioService{
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + email));
         return usuario.toDTO();
     }
+
+    // Adicione este método na classe UsuarioService
+    public String resetarSenha(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Email não encontrado."));
+
+        // Gera senha de 6 dígitos
+        String novaSenha = java.util.UUID.randomUUID().toString().substring(0, 6);
+
+        // Salva no banco criptografada
+        usuario.setSenha(passwordEncoder.encode(novaSenha));
+        usuarioRepository.save(usuario);
+
+        return novaSenha; // Retorna para exibir na tela (Modo Demo)
+    }
 }
