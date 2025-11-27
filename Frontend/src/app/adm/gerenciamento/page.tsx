@@ -38,7 +38,8 @@ import {
   createViagem,
   updateViagem,
   deleteViagem,
-  Viagem as ViagemType
+  Viagem as ViagemType,
+  CriarViagemData
 } from "@/services/vltService";
 
 interface Linha {
@@ -61,14 +62,16 @@ status: string | null;
 localizacao: string | null;
 }
 
-interface Viagem {
+export interface Viagem {
   idViagem: number;
-  dataHora: string;
-  origem: string;
-  destino: string;
-  vlt?: Vlt;
-  condutor?: { idCondutor: number; usuarioNome: string };
-  status: string;
+  dataHoraInicio: string;    
+  dataHoraFim: string;         
+  idCondutor: number;
+  idVlt: number;
+  idLinha: number;
+  condutorNome?: string;
+  vltCodigo?: string;
+  linhaNome?: string;
 }
 
 export default function GerenciamentoSistema() {
@@ -122,18 +125,20 @@ export default function GerenciamentoSistema() {
   const [isSubmittingVlt, setIsSubmittingVlt] = useState(false);
   const [searchTermVlt, setSearchTermVlt] = useState("");
 
-  const [viagens, setViagens] = useState<ViagemType[]>([]);
-  const [viagensFiltrados, setViagensFiltrados] = useState<ViagemType[]>([]);
+  const [viagens, setViagens] = useState<Viagem[]>([]);
+  const [viagensFiltrados, setViagensFiltrados] = useState<Viagem[]>([]);
   const [viagensLoading, setViagensLoading] = useState(false);
-  const [viagemEditando, setViagemEditando] = useState<ViagemType | null>(null);
-  const [isSubmittingViagem, setIsSubmittingViagem] = useState(false);
 
-  const [dataHoraViagem, setDataHoraViagem] = useState("");
-  const [origemViagem, setOrigemViagem] = useState("");
-  const [destinoViagem, setDestinoViagem] = useState("");
+
+  const [dataHoraInicio, setDataHoraInicio] = useState("");
+  const [dataHoraFim, setDataHoraFim] = useState("");
   const [idVltViagem, setIdVltViagem] = useState<number>(0);
   const [idCondutorViagem, setIdCondutorViagem] = useState<number>(0);
-  const [statusViagem, setStatusViagem] = useState("AGENDADA");
+  const [idLinhaViagem, setIdLinhaViagem] = useState<number>(0);
+
+  const [viagemEditando, setViagemEditando] = useState<Viagem | null>(null);
+  const [isSubmittingViagem, setIsSubmittingViagem] = useState(false);
+
   const [searchTermViagem, setSearchTermViagem] = useState("");
 
 
@@ -174,12 +179,17 @@ export default function GerenciamentoSistema() {
 
   useEffect(() => {
     const termo = searchTermViagem.toLowerCase();
-    const filtrados = viagens.filter(viagem =>
-      viagem.origem.toLowerCase().includes(termo) ||
-      viagem.destino.toLowerCase().includes(termo) ||
-      viagem.vlt?.numero.toLowerCase().includes(termo) ||
-      viagem.condutor?.usuarioNome.toLowerCase().includes(termo)
-    );
+
+    const filtrados = viagens.filter((viagem) => {
+      return (
+        viagem.dataHoraInicio?.toLowerCase().includes(termo) ||
+        viagem.dataHoraFim?.toLowerCase().includes(termo) ||
+        viagem.vltCodigo?.toLowerCase().includes(termo) ||
+        viagem.linhaNome?.toLowerCase().includes(termo) ||
+        viagem.condutorNome?.toLowerCase().includes(termo)
+      );
+    });
+
     setViagensFiltrados(filtrados);
   }, [searchTermViagem, viagens]);
 
@@ -579,77 +589,86 @@ export default function GerenciamentoSistema() {
   };
 
   async function carregarViagens() {
-    setViagensLoading(true);
-    try {
-      const viagensData = await getViagens();
-      setViagens(viagensData);
-      setViagensFiltrados(viagensData);
+      setViagensLoading(true);
+      try {
+        const viagensData = await getViagens(); // Viagem[]
+        setViagens(viagensData);
+        setViagensFiltrados(viagensData);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Erro ao carregar viagens:", error);
-      alert("Erro ao carregar viagens: " + (error.message || "Verifique a conexão."));
-    } finally {
-      setViagensLoading(false);
-    }
-  }
-
-  const resetFormViagem = () => {
-    setDataHoraViagem("");
-    setOrigemViagem("");
-    setDestinoViagem("");
-    setIdVltViagem(0);
-    setIdCondutorViagem(0);
-    setStatusViagem("AGENDADA");
-    setViagemEditando(null);
-  };
-
-  const handleSubmitViagem = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!dataHoraViagem || !origemViagem || !destinoViagem || !idVltViagem || !idCondutorViagem) {
-      alert("Por favor, preencha todos os campos obrigatórios.");
-      return;
-    }
-
-    setIsSubmittingViagem(true);
-
-    try {
-      const viagemData = {
-        dataHora: dataHoraViagem,
-        origem: origemViagem,
-        destino: destinoViagem,
-        idVlt: idVltViagem,
-        idCondutor: idCondutorViagem,
-        status: statusViagem
-      };
-
-      if (viagemEditando) {
-        await updateViagem(viagemEditando.idViagem, viagemData);
-        alert("Viagem atualizada com sucesso!");
-      } else {
-        await createViagem(viagemData);
-        alert("Viagem cadastrada com sucesso!");
+      } catch (error: any) {
+        console.error("Erro ao carregar viagens:", error);
+        alert(
+          "Erro ao carregar viagens: " +
+            (error.message || "Verifique a conexão.")
+        );
+      } finally {
+        setViagensLoading(false);
       }
-      
-      resetFormViagem();
-      carregarViagens();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Erro ao salvar viagem:", error);
-      alert("Erro ao salvar viagem: " + (error.message || "Tente novamente."));
-    } finally {
-      setIsSubmittingViagem(false);
     }
-  };
 
-  const handleEditViagem = (viagem: ViagemType) => {
+    const resetFormViagem = () => {
+      setDataHoraInicio("");    
+      setDataHoraFim("");      
+      setIdVltViagem(0);
+      setIdCondutorViagem(0);
+      setIdLinhaViagem(0);     
+      setViagemEditando(null);
+    };
+
+    const handleSubmitViagem = async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      if (
+        !dataHoraInicio ||
+        !dataHoraFim ||
+        !idVltViagem ||
+        !idCondutorViagem ||
+        !idLinhaViagem
+      ) {
+        alert("Por favor, preencha todos os campos obrigatórios.");
+        return;
+      }
+
+      setIsSubmittingViagem(true);
+
+      try {
+        const viagemData: CriarViagemData = {
+          dataHoraInicio,
+          dataHoraFim,
+          idVlt: idVltViagem,
+          idCondutor: idCondutorViagem,
+          idLinha: idLinhaViagem,
+        };
+
+        if (viagemEditando) {
+          await updateViagem(viagemEditando.idViagem, viagemData);
+          alert("Viagem atualizada com sucesso!");
+        } else {
+          await createViagem(viagemData);
+          alert("Viagem cadastrada com sucesso!");
+        }
+
+        resetFormViagem();
+        carregarViagens();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        console.error("Erro ao salvar viagem:", error);
+        alert(
+          "Erro ao salvar viagem: " +
+            (error?.response?.data?.message || error.message || "Tente novamente.")
+        );
+      } finally {
+        setIsSubmittingViagem(false);
+      }
+    };
+
+  const handleEditViagem = (viagem: Viagem) => {
     setViagemEditando(viagem);
-    setDataHoraViagem(viagem.dataHora);
-    setOrigemViagem(viagem.origem);
-    setDestinoViagem(viagem.destino);
-    setIdVltViagem(viagem.vlt?.idVlt || 0);
-    setIdCondutorViagem(viagem.condutor?.idCondutor || 0);
-    setStatusViagem(viagem.status);
+    setDataHoraInicio(viagem.dataHoraInicio);
+    setDataHoraFim(viagem.dataHoraFim);
+    setIdVltViagem(viagem.idVlt);
+    setIdCondutorViagem(viagem.idCondutor);
+    setIdLinhaViagem(viagem.idLinha);
   };
 
   const handleDeleteViagem = async (id: number) => {
@@ -661,10 +680,13 @@ export default function GerenciamentoSistema() {
       await deleteViagem(id);
       alert("Viagem deletada com sucesso!");
       carregarViagens();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Erro ao deletar viagem:", error);
-      alert("Erro ao deletar viagem: " + (error.message || "Tente novamente."));
+      alert(
+        "Erro ao deletar viagem: " +
+          (error.message || "Tente novamente.")
+      );
     }
   };
 
@@ -1501,76 +1523,50 @@ export default function GerenciamentoSistema() {
                         {viagemEditando ? "Editar Viagem" : "Cadastrar Nova Viagem"}
                       </CardTitle>
                       <CardDescription>
-                        {viagemEditando ? "Atualize os dados da viagem" : "Preencha os dados para adicionar uma nova viagem"}.
+                        {viagemEditando
+                          ? "Atualize os dados da viagem"
+                          : "Preencha os dados para adicionar uma nova viagem"}
+                        .
                       </CardDescription>
                     </CardHeader>
 
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Início */}
                       <div className="grid gap-3">
-                        <Label htmlFor="dataHoraViagem" className="flex items-center gap-2">
-                          <Route className="w-4 h-4" />
-                          Data e Hora *
-                        </Label>
-                        <Input
-                          id="dataHoraViagem"
-                          type="datetime-local"
-                          value={dataHoraViagem}
-                          onChange={(e) => setDataHoraViagem(e.target.value)}
-                          disabled={isSubmittingViagem}
-                          required
-                        />
-                      </div>
-
-                      <div className="grid gap-3">
-                        <Label htmlFor="statusViagem" className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4" />
-                          Status *
-                        </Label>
-                        <select
-                          id="statusViagem"
-                          value={statusViagem}
-                          onChange={(e) => setStatusViagem(e.target.value)}
-                          disabled={isSubmittingViagem}
-                          className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          required
+                        <Label
+                          htmlFor="dataHoraInicio"
+                          className="flex items-center gap-2"
                         >
-                          <option value="AGENDADA">Agendada</option>
-                          <option value="EM_PROGRESSO">Em Progresso</option>
-                          <option value="CONCLUIDA">Concluída</option>
-                          <option value="CANCELADA">Cancelada</option>
-                        </select>
-                      </div>
-
-                      <div className="grid gap-3">
-                        <Label htmlFor="origemViagem" className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          Origem *
+                          <Route className="w-4 h-4" />
+                          Início *
                         </Label>
                         <Input
-                          id="origemViagem"
-                          placeholder="Ex: Estação Central"
-                          value={origemViagem}
-                          onChange={(e) => setOrigemViagem(e.target.value)}
+                          id="dataHoraInicio"
+                          type="datetime-local"
+                          value={dataHoraInicio}
+                          onChange={(e) => setDataHoraInicio(e.target.value)}
                           disabled={isSubmittingViagem}
                           required
                         />
                       </div>
 
+                      {/* Fim */}
                       <div className="grid gap-3">
-                        <Label htmlFor="destinoViagem" className="flex items-center gap-2">
-                          <MapIcon className="w-4 h-4" />
-                          Destino *
+                        <Label htmlFor="dataHoraFim" className="flex items-center gap-2">
+                          <Route className="w-4 h-4" />
+                          Fim *
                         </Label>
                         <Input
-                          id="destinoViagem"
-                          placeholder="Ex: Estação Terminal"
-                          value={destinoViagem}
-                          onChange={(e) => setDestinoViagem(e.target.value)}
+                          id="dataHoraFim"
+                          type="datetime-local"
+                          value={dataHoraFim}
+                          onChange={(e) => setDataHoraFim(e.target.value)}
                           disabled={isSubmittingViagem}
                           required
                         />
                       </div>
 
+                      {/* VLT */}
                       <div className="grid gap-3">
                         <Label htmlFor="vltViagem" className="flex items-center gap-2">
                           <Train className="w-4 h-4" />
@@ -1587,14 +1583,18 @@ export default function GerenciamentoSistema() {
                           <option value="">Selecione um VLT</option>
                           {vlts.map((vlt) => (
                             <option key={vlt.idVlt} value={vlt.idVlt}>
-                              VLT {vlt.codigo} - {vlt.status}
+                              {vlt.codigo} - {vlt.status || "sem status"}
                             </option>
                           ))}
                         </select>
                       </div>
 
+                      {/* Condutor */}
                       <div className="grid gap-3">
-                        <Label htmlFor="condutorViagem" className="flex items-center gap-2">
+                        <Label
+                          htmlFor="condutorViagem"
+                          className="flex items-center gap-2"
+                        >
                           <User className="w-4 h-4" />
                           Condutor *
                         </Label>
@@ -1610,6 +1610,32 @@ export default function GerenciamentoSistema() {
                           {condutores.map((condutor) => (
                             <option key={condutor.idCondutor} value={condutor.idCondutor}>
                               {condutor.usuarioNome} - {condutor.matricula}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Linha */}
+                      <div className="grid gap-3">
+                        <Label
+                          htmlFor="linhaViagem"
+                          className="flex items-center gap-2"
+                        >
+                          <MapIcon className="w-4 h-4" />
+                          Linha *
+                        </Label>
+                        <select
+                          id="linhaViagem"
+                          value={idLinhaViagem}
+                          onChange={(e) => setIdLinhaViagem(Number(e.target.value))}
+                          disabled={isSubmittingViagem}
+                          className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        >
+                          <option value="">Selecione uma linha</option>
+                          {linhas.map((linha) => (
+                            <option key={linha.idLinha} value={linha.idLinha}>
+                              {linha.nome} ({linha.numero})
                             </option>
                           ))}
                         </select>
@@ -1634,6 +1660,7 @@ export default function GerenciamentoSistema() {
                   </form>
                 </Card>
 
+                {/* Filtro + contador */}
                 <div className="flex justify-between items-center mb-6">
                   <div className="relative w-80">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -1650,14 +1677,19 @@ export default function GerenciamentoSistema() {
                   </div>
                 </div>
 
+                {/* Lista de viagens */}
                 <div className="space-y-4">
-                  <h2 className="text-2xl font-bold text-gray-800">Viagens Cadastradas</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Viagens Cadastradas
+                  </h2>
 
                   {viagensFiltrados.length === 0 ? (
                     <div className="text-center py-12">
                       <Route className="mx-auto h-12 w-12 text-gray-400" />
                       <h3 className="mt-4 text-lg font-medium text-gray-900">
-                        {viagens.length === 0 ? "Nenhuma viagem cadastrada" : "Nenhuma viagem encontrada"}
+                        {viagens.length === 0
+                          ? "Nenhuma viagem cadastrada"
+                          : "Nenhuma viagem encontrada"}
                       </h3>
                       <p className="mt-2 text-gray-500">
                         {viagens.length === 0
@@ -1674,19 +1706,16 @@ export default function GerenciamentoSistema() {
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
                                   <h3 className="font-semibold text-lg text-gray-800">
-                                    {viagem.origem} → {viagem.destino}
+                                    VLT {viagem.vltCodigo || viagem.idVlt} • Linha{" "}
+                                    {viagem.linhaNome || viagem.idLinha}
                                   </h3>
-                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                    viagem.status === "CONCLUIDA" ? "bg-green-100 text-green-800" :
-                                    viagem.status === "EM_PROGRESSO" ? "bg-blue-100 text-blue-800" :
-                                    viagem.status === "CANCELADA" ? "bg-red-100 text-red-800" :
-                                    "bg-yellow-100 text-yellow-800"
-                                  }`}>
-                                    {viagem.status}
-                                  </span>
                                 </div>
+                                <p className="text-sm text-gray-500 mb-1">
+                                  Início:{" "}
+                                  {new Date(viagem.dataHoraInicio).toLocaleString()}
+                                </p>
                                 <p className="text-sm text-gray-500 mb-3">
-                                  {new Date(viagem.dataHora).toLocaleString()}
+                                  Fim: {new Date(viagem.dataHoraFim).toLocaleString()}
                                 </p>
                               </div>
                               <div className="flex gap-1">
@@ -1712,15 +1741,21 @@ export default function GerenciamentoSistema() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                               <div>
                                 <span className="text-gray-500">VLT:</span>
-                                <p className="font-medium">VLT {viagem.vlt?.numero || "N/A"}</p>
+                                <p className="font-medium">
+                                  {viagem.vltCodigo || viagem.idVlt}
+                                </p>
                               </div>
                               <div>
                                 <span className="text-gray-500">Condutor:</span>
-                                <p className="font-medium">{viagem.condutor?.usuarioNome || "N/A"}</p>
+                                <p className="font-medium">
+                                  {viagem.condutorNome || "N/A"}
+                                </p>
                               </div>
                               <div>
                                 <span className="text-gray-500">Linha:</span>
-                                <p className="font-medium">{viagem.vlt?.linha?.nome || "N/A"}</p>
+                                <p className="font-medium">
+                                  {viagem.linhaNome || viagem.idLinha}
+                                </p>
                               </div>
                               <div>
                                 <span className="text-gray-500">ID Viagem:</span>

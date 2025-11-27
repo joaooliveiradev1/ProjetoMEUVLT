@@ -66,36 +66,23 @@ export interface Condutor {
 
 export interface Viagem {
   idViagem: number;
-  dataHora: string;
-  origem: string;
-  destino: string;
-  vlt?: {
-    idVlt: number;
-    numero: string;
-    capacidade: number;
-    linha?: {
-      idLinha: number;
-      nome: string;
-      numero: string;
-    };
-  };
-  condutor?: {
-    idCondutor: number;
-    usuarioNome: string;
-    usuarioEmail?: string;
-  };
-  status: "AGENDADA" | "EM_PROGRESSO" | "CONCLUIDA" | "CANCELADA";
-  criadoEm?: string;
-  atualizadoEm?: string;
+  dataHoraInicio: string;
+  dataHoraFim: string;
+  idVlt: number;
+  idCondutor: number;
+  idLinha: number;
+  condutorNome?: string;
+  vltCodigo?: string;
+  linhaNome?: string;
 }
 
 export interface CriarViagemData {
-  dataHora: string;
-  origem: string;
-  destino: string;
-  idVlt: number;
-  idCondutor: number;
-  status: string;
+  dataHoraInicio?: string;
+  dataHoraFim?: string;
+  idVlt?: number;
+  idCondutor?: number;
+  idLinha?: number;
+  status?: string;
 }
 
 export interface AtualizarViagemData {
@@ -295,13 +282,8 @@ export async function deleteVlt(id: number) {
 // VIAGENS - CRUD E OPERAÇÕES
 
 export async function getViagens(): Promise<Viagem[]> {
-  try {
-    const response = await api.get("/viagem");
-    return Array.isArray(response.data) ? response.data : [];
-  } catch (error) {
-    console.error("Erro ao buscar viagens:", error);
-    return [];
-  }
+  const response = await api.get("/viagem");
+  return Array.isArray(response.data) ? response.data : [];
 }
 
 export async function getViagemById(idViagem: number): Promise<Viagem> {
@@ -315,42 +297,16 @@ export async function getViagemById(idViagem: number): Promise<Viagem> {
 }
 
 export async function createViagem(data: CriarViagemData): Promise<Viagem> {
-  try {
-    if (!data.dataHora || !data.origem || !data.destino || !data.idVlt || !data.idCondutor) {
-      throw new Error("Todos os campos obrigatórios devem ser preenchidos");
-    }
-
-    const response = await api.post("/viagem", {
-      dataHora: data.dataHora,
-      origem: data.origem,
-      destino: data.destino,
-      idVlt: data.idVlt,
-      idCondutor: data.idCondutor,
-      status: data.status || "AGENDADA",
-    });
-
-    return response.data;
-  } catch (error) {
-    console.error("Erro ao criar viagem:", error);
-    throw error;
-  }
+  const response = await api.post("/viagem", data);
+  return response.data;
 }
 
 export async function updateViagem(
   idViagem: number,
-  data: AtualizarViagemData
+  data: CriarViagemData
 ): Promise<Viagem> {
-  try {
-    if (!idViagem) {
-      throw new Error("ID da viagem é obrigatório");
-    }
-
-    const response = await api.put(`/viagem/${idViagem}`, data);
-    return response.data;
-  } catch (error) {
-    console.error(`Erro ao atualizar viagem ${idViagem}:`, error);
-    throw error;
-  }
+  const response = await api.put(`/viagem/${idViagem}`, data);
+  return response.data;
 }
 
 export async function deleteViagem(idViagem: number): Promise<void> {

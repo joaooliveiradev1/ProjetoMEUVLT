@@ -114,7 +114,6 @@ public class UsuarioService{
         return usuario.toDTO();
     }
 
-    // Adicione este método na classe UsuarioService
     public String resetarSenha(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Email não encontrado."));
@@ -126,6 +125,6 @@ public class UsuarioService{
         usuario.setSenha(passwordEncoder.encode(novaSenha));
         usuarioRepository.save(usuario);
 
-        return novaSenha; // Retorna para exibir na tela (Modo Demo)
+        return novaSenha;
     }
 }
