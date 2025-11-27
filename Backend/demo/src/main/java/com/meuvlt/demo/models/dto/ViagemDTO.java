@@ -1,5 +1,6 @@
 package com.meuvlt.demo.models.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -8,11 +9,20 @@ public class ViagemDTO {
     private int idViagem;
     private LocalDateTime dataHoraInicio;
     private LocalDateTime dataHoraFim;
+
+    @JsonProperty("idCondutor")
     private int condutorId;
+
     private String condutorNome;
+
+    @JsonProperty("idVlt")
     private int vltId;
+
     private String vltCodigo;
+
+    @JsonProperty("idLinha")
     private int linhaId;
+
     private String linhaNome;
 
     public int getIdViagem() {

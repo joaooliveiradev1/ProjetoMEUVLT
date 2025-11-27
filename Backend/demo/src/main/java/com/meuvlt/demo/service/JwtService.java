@@ -4,17 +4,30 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.util.Base64;
 import java.util.Date;
 
 @Service
 public class JwtService {
 
-    private static final SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+    @Value("${jwt.secret:minha-chave-secreta-super-segura-com-mais-de-32-caracteres-para-HS512}")
+    private String secretKeyString;
+
+    private static SecretKey key;
+
+    @PostConstruct
+    public void init() {
+        this.key = Keys.hmacShaKeyFor(
+                Base64.getEncoder().encode(secretKeyString.getBytes())
+        );
+    }
 
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
@@ -25,7 +38,7 @@ public class JwtService {
                         .orElse("USER"))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24h
-                .signWith(key)
+                .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
 
@@ -38,12 +51,7 @@ public class JwtService {
     }
 
     public static String extractUsername(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+        return extractAllClaims(token).getSubject();
     }
 
     public static boolean validateToken(String token) {

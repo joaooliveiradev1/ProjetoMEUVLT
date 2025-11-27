@@ -629,6 +629,11 @@ export default function GerenciamentoSistema() {
         return;
       }
 
+      if (idVltViagem === 0 || idCondutorViagem === 0 || idLinhaViagem === 0) {
+        alert("Selecione um VLT, Condutor e Linha válidos (não podem ser 0).");
+        return;
+      }
+
       setIsSubmittingViagem(true);
 
       try {
