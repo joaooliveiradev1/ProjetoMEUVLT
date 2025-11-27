@@ -47,7 +47,7 @@ export default function Nav() {
           setPerfilRoute("/condutor/perfil");
           setLinhasRoute("/condutor/operacao"); 
         } else {
-          setPerfilRoute("/user/perfil");
+          setPerfilRoute("/passageiro/perfil");
           setLinhasRoute("/passageiro/linhas");
         }
 

@@ -154,7 +154,7 @@ export async function atualizarStatusIncidente(
   return response.data;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export async function createIncidente(data: any) {
   const response = await api.post("/incidente", data);
   return response.data;
@@ -213,7 +213,7 @@ export async function getUsuarioById(id: number) {
   return response.data;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export async function updateUsuario(id: number, data: any) {
   const response = await api.put(`/usuarios/${id}`, data);
   return response.data;

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUsuarioById, updateUsuario } from "@/services/vltService";
+import { getUsuarioByEmail, updateUsuario } from "@/services/vltService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, Save, User } from "lucide-react";
@@ -14,15 +14,20 @@ export default function AdminPerfilPage() {
   const [loading, setLoading] = useState(true);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  
-  // ID fixo para teste (em produção viria do token/contexto)
-  const userId = 1; 
+  const [userId, setUserId] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
       try {
-        // Em um cenário real, decodifique o token para pegar o ID
-        const data = await getUsuarioById(userId);
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const base64Url = token.split('.')[1];
+        const jsonPayload = JSON.parse(decodeURIComponent(window.atob(base64Url.replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+        const userEmail = jsonPayload.sub;
+
+        const data = await getUsuarioByEmail(userEmail);
+        setUserId(data.idUsuario);
         setNome(data.nome);
         setEmail(data.email);
       } catch (error) {
@@ -35,6 +40,7 @@ export default function AdminPerfilPage() {
   }, []);
 
   const handleSave = async () => {
+    if(!userId) return;
     try {
       await updateUsuario(userId, { nome, email });
       alert("Perfil atualizado com sucesso!");
@@ -53,7 +59,7 @@ export default function AdminPerfilPage() {
         <CardHeader className="flex flex-row items-center gap-4">
           <Avatar className="h-20 w-20">
             <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback>AD</AvatarFallback>
+            <AvatarFallback>{nome ? nome.substring(0,2).toUpperCase() : "AD"}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col gap-1">
             <CardTitle className="text-xl">{nome}</CardTitle>

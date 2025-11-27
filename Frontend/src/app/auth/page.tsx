@@ -19,7 +19,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import api from "@/services/api"
-import { TrainFront } from "lucide-react" // Ícone para dar uma identidade
+import { TrainFront } from "lucide-react"
 
 export default function AuthPage() {
 
@@ -36,18 +36,56 @@ export default function AuthPage() {
     setIsLoading(true)
 
     try {
+      
       const response = await api.post("/auth/login", {
         email: loginEmail,
         senha: loginSenha,
       })
       
-      localStorage.setItem("token", response.data.token)
-      window.location.href = "/"; 
+      console.log("Login realizado. Resposta:", response.data);
+
+      const token = response.data.token;
+      
+      if (!token) {
+        throw new Error("Token não recebido do servidor.");
+      }
+
+     
+      localStorage.setItem("token", token);
+
+     
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        const payload = JSON.parse(jsonPayload);
+        const role = payload.role;
+        
+        console.log("Perfil detectado:", role);
+
+      
+        if (role === "ROLE_Administrador" || role === "Administrador") {
+          window.location.href = "/adm/gerenciamento";
+        } else if (role === "ROLE_Condutor" || role === "Condutor") {
+          window.location.href = "/condutor/operacao";
+        } else {
+          window.location.href = "./";
+        }
+
+      } catch (decodeError) {
+        console.error("Erro ao ler o perfil do token:", decodeError);
+        
+        window.location.href = "/"; 
+      }
 
     } catch (error: any) {
       console.error("Erro no login:", error)
       const msg = error.response?.data?.error || "Erro ao fazer login. Verifique suas credenciais.";
       alert(msg)
+    } finally {
       setIsLoading(false)
     }
   }
@@ -57,10 +95,11 @@ export default function AuthPage() {
     setIsLoading(true)
 
     try {
-      const response = await api.post("/auth/register", {
+      await api.post("/auth/register", {
         nome: regName,
         email: regEmail,
         senha: regPassword,
+       
       })
 
       alert("Usuário registrado com sucesso! Faça login agora.")
@@ -68,7 +107,7 @@ export default function AuthPage() {
       setRegPassword("")
       setRegName("")
       
-      // Opcional: recarregar a página para ir para a aba de login, ou apenas limpar
+      
       window.location.reload();
       
     } catch (error: any) {
@@ -83,7 +122,6 @@ export default function AuthPage() {
   return (
     <div className="min-h-[calc(100vh-140px)] flex flex-col items-center justify-center bg-slate-50 p-4">
       
-      {/* Cabeçalho simples acima do card para identidade */}
       <div className="mb-8 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-black -600 text-white mb-4">
           <TrainFront className="h-6 w-6" />
@@ -94,10 +132,9 @@ export default function AuthPage() {
 
       <Tabs className="w-full max-w-md" defaultValue="account">
         
-        {/* TabsList com largura total para ficar bonito */}
         <TabsList className="grid w-full grid-cols-2 h-12 mb-6 bg-white border shadow-sm">
-          <TabsTrigger value="account" className="text-base data-[state=active]:bg-slate-100 data-[state=active]:text-black -700">Login</TabsTrigger>
-          <TabsTrigger value="password" className="text-base data-[state=active]:bg-slate-100 data-[state=active]:text-black -700">Registro</TabsTrigger>
+          <TabsTrigger value="account">Login</TabsTrigger>
+          <TabsTrigger value="password">Registro</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account">
