@@ -1,7 +1,5 @@
 import api from "./api";
 
-// --- INTERFACES ---
-
 export interface CriarVltData {
   numero: string;
   capacidade: number;
@@ -54,21 +52,67 @@ export interface CriarAlertaData {
   administradorId: number;
 }
 
-export interface LinhaData { 
+export interface LinhaData {
   nome: string;
   numero: string;
 }
 
-// Adicionando interface completa para Condutor
 export interface Condutor {
   idCondutor: number;
   matricula: string;
   usuarioId: number;
   usuarioNome: string;
-  usuarioEmail: string; // Essencial para a comparação
+  usuarioEmail: string;
 }
 
-// --- 1. ALERTAS (ADMIN & PASSAGEIRO) ---
+
+// VIAGENS - INTERFACES E TIPOS
+
+export interface Viagem {
+  idViagem: number;
+  dataHora: string;
+  origem: string;
+  destino: string;
+  vlt?: {
+    idVlt: number;
+    numero: string;
+    capacidade: number;
+    linha?: {
+      idLinha: number;
+      nome: string;
+      numero: string;
+    };
+  };
+  condutor?: {
+    idCondutor: number;
+    usuarioNome: string;
+    usuarioEmail?: string;
+  };
+  status: "AGENDADA" | "EM_PROGRESSO" | "CONCLUIDA" | "CANCELADA";
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
+export interface CriarViagemData {
+  dataHora: string;
+  origem: string;
+  destino: string;
+  idVlt: number;
+  idCondutor: number;
+  status: string;
+}
+
+export interface AtualizarViagemData {
+  dataHora?: string;
+  origem?: string;
+  destino?: string;
+  idVlt?: number;
+  idCondutor?: number;
+  status?: string;
+}
+
+
+// ALERTAS - CRUD
 
 export async function getAlertas(): Promise<Alerta[]> {
   try {
@@ -89,8 +133,8 @@ export async function deleteAlerta(id: number) {
   const response = await api.delete(`/alertas/${id}`);
   return response.data;
 }
-
-// --- 2. INCIDENTES (FLUXO DE APROVAÇÃO) ---
+ 
+// INCIDENTES - FLUXO DE APROVAÇÃO
 
 export async function getIncidentesPendentes(): Promise<IncidenteView[]> {
   try {
@@ -102,7 +146,10 @@ export async function getIncidentesPendentes(): Promise<IncidenteView[]> {
   }
 }
 
-export async function atualizarStatusIncidente(id: number, status: "PUBLICADO" | "REJEITADO") {
+export async function atualizarStatusIncidente(
+  id: number,
+  status: "PUBLICADO" | "REJEITADO"
+) {
   const response = await api.put(`/incidente/${id}/status/${status}`);
   return response.data;
 }
@@ -113,7 +160,8 @@ export async function createIncidente(data: any) {
   return response.data;
 }
 
-// --- 3. LINHAS (CRUD) ---
+
+// LINHAS - CRUD
 
 export async function getLinhas() {
   const response = await api.get("/api/linhas");
@@ -135,13 +183,31 @@ export async function deleteLinha(id: number) {
   return response.data;
 }
 
-// --- 4. ESTAÇÕES ---
+
+// ESTAÇÕES - CRUD
+
 export async function getEstacoes() {
   const response = await api.get("/estacoes");
   return response.data;
 }
 
-// --- 5. USUÁRIOS E CONDUTORES ---
+export async function createEstacao(data: CriarEstacaoData) {
+  const response = await api.post("/estacoes", data);
+  return response.data;
+}
+
+export async function updateEstacao(id: number, data: CriarEstacaoData) {
+  const response = await api.put(`/estacoes/${id}`, data);
+  return response.data;
+}
+
+export async function deleteEstacao(id: number) {
+  const response = await api.delete(`/estacoes/${id}`);
+  return response.data;
+}
+
+// USUÁRIOS - CRUD
+
 export async function getUsuarioById(id: number) {
   const response = await api.get(`/usuarios/${id}`);
   return response.data;
@@ -153,23 +219,8 @@ export async function updateUsuario(id: number, data: any) {
   return response.data;
 }
 
-export async function getCondutorById(id: number) {
-    const response = await api.get(`/condutor/${id}`);
-    return response.data;
-}
 
-// Nova função para pegar todos e filtrar no front
-export async function getAllCondutores(): Promise<Condutor[]> {
-    try {
-        const response = await api.get("/condutor");
-        return Array.isArray(response.data) ? response.data : [];
-    } catch (error) {
-        console.error("Erro ao buscar condutores", error);
-        return [];
-    }
-}
-
-
+// CONDUTORES - CRUD
 
 export async function getCondutores(): Promise<Condutor[]> {
   try {
@@ -177,6 +228,21 @@ export async function getCondutores(): Promise<Condutor[]> {
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error("Erro ao buscar condutores:", error);
+    return [];
+  }
+}
+
+export async function getCondutorById(id: number) {
+  const response = await api.get(`/condutor/${id}`);
+  return response.data;
+}
+
+export async function getAllCondutores(): Promise<Condutor[]> {
+  try {
+    const response = await api.get("/condutor");
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Erro ao buscar condutores", error);
     return [];
   }
 }
@@ -197,21 +263,7 @@ export async function deleteCondutor(id: number) {
 }
 
 
-
-export async function createEstacao(data: CriarEstacaoData) {
-  const response = await api.post("/estacoes", data);
-  return response.data;
-}
-
-export async function updateEstacao(id: number, data: CriarEstacaoData) {
-  const response = await api.put(`/estacoes/${id}`, data);
-  return response.data;
-}
-
-export async function deleteEstacao(id: number) {
-  const response = await api.delete(`/estacoes/${id}`);
-  return response.data;
-}
+// VLTs - CRUD
 
 export async function getVlts(): Promise<VltView[]> {
   try {
@@ -241,4 +293,122 @@ export async function updateVlt(id: number, data: CriarVltData) {
 export async function deleteVlt(id: number) {
   const response = await api.delete(`/vlt/${id}`);
   return response.data;
+}
+
+
+
+// VIAGENS - CRUD E OPERAÇÕES
+
+export async function getViagens(): Promise<Viagem[]> {
+  try {
+    const response = await api.get("/viagem");
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Erro ao buscar viagens:", error);
+    return [];
+  }
+}
+
+export async function getViagemById(idViagem: number): Promise<Viagem> {
+  try {
+    const response = await api.get(`/viagem/${idViagem}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao buscar viagem ${idViagem}:`, error);
+    throw error;
+  }
+}
+
+export async function createViagem(data: CriarViagemData): Promise<Viagem> {
+  try {
+    if (!data.dataHora || !data.origem || !data.destino || !data.idVlt || !data.idCondutor) {
+      throw new Error("Todos os campos obrigatórios devem ser preenchidos");
+    }
+
+    const response = await api.post("/viagem", {
+      dataHora: data.dataHora,
+      origem: data.origem,
+      destino: data.destino,
+      idVlt: data.idVlt,
+      idCondutor: data.idCondutor,
+      status: data.status || "AGENDADA",
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao criar viagem:", error);
+    throw error;
+  }
+}
+
+export async function updateViagem(
+  idViagem: number,
+  data: AtualizarViagemData
+): Promise<Viagem> {
+  try {
+    if (!idViagem) {
+      throw new Error("ID da viagem é obrigatório");
+    }
+
+    const response = await api.put(`/viagem/${idViagem}`, data);
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao atualizar viagem ${idViagem}:`, error);
+    throw error;
+  }
+}
+
+export async function deleteViagem(idViagem: number): Promise<void> {
+  try {
+    if (!idViagem) {
+      throw new Error("ID da viagem é obrigatório");
+    }
+
+    await api.delete(`/viagem/${idViagem}`);
+  } catch (error) {
+    console.error(`Erro ao deletar viagem ${idViagem}:`, error);
+    throw error;
+  }
+}
+
+export async function getViagensPorStatus(status: string): Promise<Viagem[]> {
+  try {
+    const response = await api.get(`/viagem?status=${status}`);
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error(`Erro ao buscar viagens com status ${status}:`, error);
+    return [];
+  }
+}
+
+export async function getViagensDoCondutor(idCondutor: number): Promise<Viagem[]> {
+  try {
+    const response = await api.get(`/viagem?idCondutor=${idCondutor}`);
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error(`Erro ao buscar viagens do condutor ${idCondutor}:`, error);
+    return [];
+  }
+}
+
+export async function getViagensDoVlt(idVlt: number): Promise<Viagem[]> {
+  try {
+    const response = await api.get(`/viagem?idVlt=${idVlt}`);
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error(`Erro ao buscar viagens do VLT ${idVlt}:`, error);
+    return [];
+  }
+}
+
+export async function atualizarStatusViagem(
+  idViagem: number,
+  novoStatus: string
+): Promise<Viagem> {
+  try {
+    return await updateViagem(idViagem, { status: novoStatus });
+  } catch (error) {
+    console.error(`Erro ao atualizar status da viagem ${idViagem}:`, error);
+    throw error;
+  }
 }
