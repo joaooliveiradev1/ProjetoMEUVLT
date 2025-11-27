@@ -119,15 +119,20 @@ export async function deleteLinha(id: number) {
 }
 
 // --- 4. ESTAÇÕES ---
+// --- 4. ESTAÇÕES ---
 
+export async function getEstacoes() {
+  const response = await api.get("/estacoes");
 export async function getEstacoes() {
   const response = await api.get("/estacoes");
   return response.data;
 }
 
 // --- 5. USUÁRIOS E CONDUTORES ---
+// --- 5. USUÁRIOS E CONDUTORES ---
 
 export async function getUsuarioById(id: number) {
+  const response = await api.get(`/usuarios/${id}`);
   const response = await api.get(`/usuarios/${id}`);
   return response.data;
 }
