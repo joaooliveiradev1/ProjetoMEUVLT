@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import { Plus, Edit, Trash2, Search, Bus, MapPin, Route, Train, Bell, Map as MapIcon, AlertTriangle, CheckCircle, XCircle, User, Mail, IdCard, Building } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Bus, MapPin, Route, Train, Bell, Map as MapIcon, AlertTriangle, CheckCircle, XCircle, User, Mail, IdCard, Building, Hash, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +29,11 @@ import {
   CriarEstacaoData,
   createEstacao,
   updateEstacao,
-  deleteEstacao
+  deleteEstacao,
+  getVlts, 
+  createVlt, 
+  updateVlt, 
+  deleteVlt 
 } from "@/services/vltService";
 
 interface Linha {
@@ -45,10 +49,35 @@ interface Estacao {
   linha?: Linha;
 }
 
+interface Vlt {
+  idVlt: number;
+  numero: string;
+  capacidade: number;
+  linha?: Linha;
+}
+
 export default function GerenciamentoSistema() {
-  const [activeTab, setActiveTab] = useState<"condutores" | "estacoes" | "vlts" | "viagens" | "alertas" | "linhas">("condutores");
+  const [activeTab, setActiveTab] = useState("condutores");
   const [searchTerm, setSearchTerm] = useState("");
-  
+
+  // Estados para VLTs
+  const [vlts, setVlts] = useState<Vlt[]>([]);
+  const [vltsFiltrados, setVltsFiltrados] = useState<Vlt[]>([]);
+  const [vltLoading, setVltLoading] = useState(true);
+
+  // Formulário de VLT
+  const [numeroVlt, setNumeroVlt] = useState("");
+  const [capacidadeVlt, setCapacidadeVlt] = useState<number>(0);
+  const [idLinhaVlt, setIdLinhaVlt] = useState<number>(0);
+
+  // Controle de edição de VLT
+  const [vltEditando, setVltEditando] = useState(false);
+  const [idVltEditando, setIdVltEditando] = useState<number | null>(null);
+
+  // OUTROS
+  const [isSubmittingVlt, setIsSubmittingVlt] = useState(false);
+  const [searchTermVlt, setSearchTermVlt] = useState("");
+
   // Estados para Condutores
   const [condutores, setCondutores] = useState<CondutorType[]>([]);
   const [condutoresLoading, setCondutoresLoading] = useState(false);
@@ -77,26 +106,41 @@ export default function GerenciamentoSistema() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-// Estados para o formulário de Estações
-const [estacoesLoading, setEstacoesLoading] = useState(false);
-const [estacaoEditando, setEstacaoEditando] = useState<Estacao | null>(null);
-const [isSubmittingEstacao, setIsSubmittingEstacao] = useState(false);
+  // Estados para o formulário de Estações
+  const [estacoesLoading, setEstacoesLoading] = useState(false);
+  const [estacaoEditando, setEstacaoEditando] = useState<Estacao | null>(null);
+  const [isSubmittingEstacao, setIsSubmittingEstacao] = useState(false);
 
-    // Formulário de Estação
-    const [nomeEstacao, setNomeEstacao] = useState("");
-    const [enderecoEstacao, setEnderecoEstacao] = useState("");
-    const [idLinhaEstacao, setIdLinhaEstacao] = useState<number | "">("");
+  // Formulário de Estação
+  const [nomeEstacao, setNomeEstacao] = useState("");
+  const [enderecoEstacao, setEnderecoEstacao] = useState("");
+  const [idLinhaEstacao, setIdLinhaEstacao] = useState<number | "">();
 
-  // Carregar dados quando a tab mudar
-    useEffect(() => {
-    if (activeTab === "alertas") {
-        carregarAlertas();
-    } else if (activeTab === "linhas" || activeTab === "estacoes") {
-        carregarLinhas();
-    } else if (activeTab === "condutores") {
-        carregarCondutores();
+  
+ useEffect(() => {
+  const carregarDadosPorTab = async () => {
+    switch (activeTab) {
+      case "alertas":
+        await carregarAlertas();
+        break;
+      case "linhas":
+      case "estacoes":
+        await carregarLinhasComEstacoes();
+        break;
+      case "condutores":
+        await carregarCondutores();
+        break;
+      case "vlts":
+        await carregarVlts();
+        break;
+      // case "viagens" não precisa fazer nada
+      default:
+        break;
     }
-    }, [activeTab]);
+  };
+
+  carregarDadosPorTab(); 
+}, [activeTab]);
 
   // ========== FUNÇÕES PARA CONDUTORES ==========
   async function carregarCondutores() {
@@ -340,25 +384,6 @@ const estacoesFiltradas = estacoes.filter(estacao =>
   estacao.linha?.nome.toLowerCase().includes(searchTerm.toLowerCase())
 );
 
-  // Funções para Linhas
-  async function carregarLinhas() {
-    setLinhasLoading(true);
-    try {
-      const [linhasData, estacoesData] = await Promise.all([
-        getLinhas(),
-        getEstacoes(),
-      ]);
-      setLinhas(linhasData);
-      setEstacoes(estacoesData);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Erro ao carregar dados:", error);
-      alert("Erro ao carregar dados: " + (error.message || "Verifique se o servidor está no Ar!"));
-    } finally {
-      setLinhasLoading(false);
-    }
-  }
-
   const resetForm = () => {
     setNome("");
     setNumero("");
@@ -415,6 +440,125 @@ const estacoesFiltradas = estacoes.filter(estacao =>
     }
   };
 
+  useEffect(() => {
+    carregarLinhas();
+    carregarVlts();
+  }, []);
+
+  const carregarLinhas = async () => {
+      try {
+          const data = await getLinhas();
+          setLinhas(data);
+      } catch (err) {
+          console.error("Erro ao carregar linhas", err);
+      }
+  };
+
+  const carregarLinhasComEstacoes = async () => {
+  setLinhasLoading(true);
+  try {
+    const [linhasData, estacoesData] = await Promise.all([
+      getLinhas(),
+      getEstacoes(),
+    ]);
+    setLinhas(linhasData);
+    setEstacoes(estacoesData);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.error("Erro ao carregar dados:", error);
+    alert("Erro ao carregar dados: " + (error.message || "Verifique se o servidor está no Ar!"));
+  } finally {
+    setLinhasLoading(false);
+  }
+};
+
+  // Função única para carregar VLTs
+const carregarVlts = async () => {
+  try {
+    setVltLoading(true);
+    const data = await getVlts();
+    setVlts(data);
+    setVltsFiltrados(data);
+  } catch (err) {
+    console.error("Erro ao carregar VLTs", err);
+    alert("Erro ao carregar VLTs: " + (err instanceof Error ? err.message : "Erro desconhecido"));
+  } finally {
+    setVltLoading(false);
+  }
+};
+
+  useEffect(() => {
+  const termo = searchTermVlt.toLowerCase();
+  const filtrados = vlts.filter(
+    (v) =>
+      v?.numero?.toLowerCase().includes(termo) ||
+      v?.linha?.nome?.toLowerCase().includes(termo) ||
+      String(v?.linha?.numero).includes(termo)
+  );
+  setVltsFiltrados(filtrados);
+}, [searchTermVlt, vlts]);
+
+  // Função para enviar o formulário de VLT
+const handleSubmitVlt = async (e: FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setIsSubmittingVlt(true);
+
+  const payload = {
+    numero: numeroVlt,
+    capacidade: capacidadeVlt,
+    idLinha: idLinhaVlt
+  };
+
+  try {
+    if (vltEditando && idVltEditando) {
+      await updateVlt(idVltEditando, payload);
+      alert("VLT atualizado com sucesso!");
+    } else {
+      await createVlt(payload);
+      alert("VLT cadastrado com sucesso!");
+    }
+
+    resetFormVlt();
+    carregarVlts();
+  } catch (err) {
+    console.error("Erro ao salvar VLT", err);
+    alert("Erro ao salvar VLT: " + (err instanceof Error ? err.message : "Erro desconhecido"));
+  } finally {
+    setIsSubmittingVlt(false);
+  }
+};
+
+  // Função para editar VLT
+  const handleEditVlt = (vlt: Vlt) => {
+    setVltEditando(true);
+    setIdVltEditando(vlt.idVlt);
+    setNumeroVlt(vlt.numero);
+    setCapacidadeVlt(vlt.capacidade);
+    setIdLinhaVlt(vlt.linha?.idLinha || 0);
+  };
+
+  // Função para deletar VLT
+ const handleDeleteVlt = async (idVlt: number) => {
+  if (!confirm("Deseja realmente excluir este VLT?")) return;
+  try {
+    await deleteVlt(idVlt);
+    alert("VLT deletado com sucesso!");
+    carregarVlts();
+  } catch (err) {
+    console.error("Erro ao deletar VLT", err);
+    alert("Erro ao deletar VLT: " + (err instanceof Error ? err.message : "Erro desconhecido"));
+  }
+};
+
+  // Função para resetar o formulário de VLT
+  const resetFormVlt = () => {
+    setVltEditando(false);
+    setIdVltEditando(null);
+    setNumeroVlt("");
+    setCapacidadeVlt(0);
+    setIdLinhaVlt(0);
+  };
+
   return (
     <div className="pl-35 justify-center w-350 p-6">
         {/* Header */}
@@ -426,656 +570,837 @@ const estacoesFiltradas = estacoes.filter(estacao =>
                 Gerencie condutores, estações, VLTs, viagens, alertas e linhas
             </p>
         </div>
-      {/* Tabs */}
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="border-b">
-          <nav className="flex space-x-8 pl-12 gap-20 px-6">
-            {[
-              { id: "condutores", label: "Condutores", icon: Bus },
-              { id: "estacoes", label: "Estações", icon: MapPin },
-              { id: "vlts", label: "VLTs", icon: Train },
-              { id: "viagens", label: "Viagens", icon: Route },
-              { id: "alertas", label: "Alertas", icon: Bell },
-              { id: "linhas", label: "Linhas", icon: MapIcon },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center py-4 px-2 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <tab.icon className="w-5 h-5 mr-2" />
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
 
-      {/* Conteúdo das Tabs */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        
-        {/* Tab de Condutores */}
-        {activeTab === "condutores" && (
-          <div className="p-6">
-            {condutoresLoading ? (
-              <div className="flex justify-center items-center py-8">
-                <p className="text-gray-600">Carregando condutores...</p>
-              </div>
-            ) : (
-              <>
-                {/* Formulário de Cadastro/Edição de Condutor */}
-                <Card className="mb-8">
-                  <form onSubmit={handleSubmitCondutor}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <User className="w-5 h-5" />
-                        {condutorEditando ? "Editar Condutor" : "Cadastrar Novo Condutor"}
-                      </CardTitle>
-                      <CardDescription>
-                        {condutorEditando ? "Atualize os dados do condutor" : "Preencha os dados para adicionar um novo condutor"}.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="grid gap-3">
-                        <Label htmlFor="matricula" className="flex items-center gap-2">
-                          <IdCard className="w-4 h-4" />
-                          Matrícula *
-                        </Label>
-                        <Input
-                          id="matricula"
-                          placeholder="Ex: CON-001"
-                          value={matricula}
-                          onChange={(e) => setMatricula(e.target.value)}
-                          disabled={isSubmittingCondutor}
-                          required
-                        />
-                      </div>
-                      <div className="grid gap-3">
-                        <Label htmlFor="usuarioId" className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          ID do Usuário *
-                        </Label>
-                        <Input
-                          id="usuarioId"
-                          type="number"
-                          placeholder="Ex: 123"
-                          value={usuarioId}
-                          onChange={(e) => setUsuarioId(e.target.value)}
-                          disabled={isSubmittingCondutor}
-                          required
-                        />
-                      </div>
-                      {condutorEditando && (
-                        <>
-                          <div className="grid gap-3">
-                            <Label htmlFor="usuarioNome" className="flex items-center gap-2">
-                              <User className="w-4 h-4" />
-                              Nome do Usuário
-                            </Label>
-                            <Input
-                              id="usuarioNome"
-                              placeholder="Nome do usuário"
-                              value={usuarioNome}
-                              disabled
-                              className="bg-gray-50"
-                            />
-                          </div>
-                          <div className="grid gap-3">
-                            <Label htmlFor="usuarioEmail" className="flex items-center gap-2">
-                              <Mail className="w-4 h-4" />
-                              Email do Usuário
-                            </Label>
-                            <Input
-                              id="usuarioEmail"
-                              type="email"
-                              placeholder="email@exemplo.com"
-                              value={usuarioEmail}
-                              disabled
-                              className="bg-gray-50"
-                            />
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                    <CardFooter className="flex justify-end gap-4">
-                      {condutorEditando && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={resetFormCondutor}
-                          disabled={isSubmittingCondutor}
-                        >
-                          Cancelar Edição
-                        </Button>
-                      )}
-                      <Button type="submit" disabled={isSubmittingCondutor}>
-                        {condutorEditando ? "Salvar Alterações" : "Cadastrar Condutor"}
-                      </Button>
-                    </CardFooter>
-                  </form>
-                </Card>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
+            <TabsTrigger value="condutores" className="flex items-center gap-2">
+              <Bus className="w-4 h-4" />
+              <span className="hidden sm:inline">Condutores</span>
+            </TabsTrigger>
+            <TabsTrigger value="estacoes" className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              <span className="hidden sm:inline">Estações</span>
+            </TabsTrigger>
+            <TabsTrigger value="vlts" className="flex items-center gap-2">
+              <Train className="w-4 h-4" />
+              <span className="hidden sm:inline">VLTs</span>
+            </TabsTrigger>
+            <TabsTrigger value="viagens" className="flex items-center gap-2">
+              <Route className="w-4 h-4" />
+              <span className="hidden sm:inline">Viagens</span>
+            </TabsTrigger>
+            <TabsTrigger value="alertas" className="flex items-center gap-2">
+              <Bell className="w-4 h-4" />
+              <span className="hidden sm:inline">Alertas</span>
+            </TabsTrigger>
+            <TabsTrigger value="linhas" className="flex items-center gap-2">
+              <MapIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Linhas</span>
+            </TabsTrigger>
+          </TabsList>
 
-                {/* Search Bar para Condutores */}
-                <div className="flex justify-between items-center mb-6">
-                  <div className="relative w-80">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      placeholder="Pesquisar condutores..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {condutoresFiltrados.length} de {condutores.length} condutores
-                  </div>
+          {/* Conteúdo das Tabs */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            
+            {/* Tab de Condutores */}
+            <TabsContent value="condutores" className="p-6">
+              {condutoresLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <p className="text-gray-600">Carregando condutores...</p>
                 </div>
+              ) : (
+                <>
+                  {/* Formulário de Cadastro/Edição de Condutor */}
+                  <Card className="mb-8">
+                    <form onSubmit={handleSubmitCondutor}>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <User className="w-5 h-5" />
+                          {condutorEditando ? "Editar Condutor" : "Cadastrar Novo Condutor"}
+                        </CardTitle>
+                        <CardDescription>
+                          {condutorEditando ? "Atualize os dados do condutor" : "Preencha os dados para adicionar um novo condutor"}.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid gap-3">
+                          <Label htmlFor="matricula" className="flex items-center gap-2">
+                            <IdCard className="w-4 h-4" />
+                            Matrícula *
+                          </Label>
+                          <Input
+                            id="matricula"
+                            placeholder="Ex: CON-001"
+                            value={matricula}
+                            onChange={(e) => setMatricula(e.target.value)}
+                            disabled={isSubmittingCondutor}
+                            required
+                          />
+                        </div>
+                        <div className="grid gap-3">
+                          <Label htmlFor="usuarioId" className="flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            ID do Usuário *
+                          </Label>
+                          <Input
+                            id="usuarioId"
+                            type="number"
+                            placeholder="Ex: 123"
+                            value={usuarioId}
+                            onChange={(e) => setUsuarioId(e.target.value)}
+                            disabled={isSubmittingCondutor}
+                            required
+                          />
+                        </div>
+                        {condutorEditando && (
+                          <>
+                            <div className="grid gap-3">
+                              <Label htmlFor="usuarioNome" className="flex items-center gap-2">
+                                <User className="w-4 h-4" />
+                                Nome do Usuário
+                              </Label>
+                              <Input
+                                id="usuarioNome"
+                                placeholder="Nome do usuário"
+                                value={usuarioNome}
+                                disabled
+                                className="bg-gray-50"
+                              />
+                            </div>
+                            <div className="grid gap-3">
+                              <Label htmlFor="usuarioEmail" className="flex items-center gap-2">
+                                <Mail className="w-4 h-4" />
+                                Email do Usuário
+                              </Label>
+                              <Input
+                                id="usuarioEmail"
+                                type="email"
+                                placeholder="email@exemplo.com"
+                                value={usuarioEmail}
+                                disabled
+                                className="bg-gray-50"
+                              />
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                      <CardFooter className="flex justify-end gap-4">
+                        {condutorEditando && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={resetFormCondutor}
+                            disabled={isSubmittingCondutor}
+                          >
+                            Cancelar Edição
+                          </Button>
+                        )}
+                        <Button type="submit" disabled={isSubmittingCondutor}>
+                          {condutorEditando ? "Salvar Alterações" : "Cadastrar Condutor"}
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  </Card>
 
-                {/* Lista de Condutores */}
-                <div className="space-y-4">
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    Condutores Cadastrados
-                  </h2>
-
-                  {condutoresFiltrados.length === 0 ? (
-                    <div className="text-center py-12">
-                      <User className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-4 text-lg font-medium text-gray-900">
-                        {condutores.length === 0 ? "Nenhum condutor cadastrado" : "Nenhum condutor encontrado"}
-                      </h3>
-                      <p className="mt-2 text-gray-500">
-                        {condutores.length === 0 
-                          ? "Comece cadastrando o primeiro condutor." 
-                          : "Tente ajustar os termos da pesquisa."}
-                      </p>
+                  {/* Search Bar para Condutores */}
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="relative w-80">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        placeholder="Pesquisar condutores..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {condutoresFiltrados.map((condutor) => (
-                        <Card key={condutor.idCondutor} className="relative">
-                          <CardContent className="pt-6">
-                            <div className="flex items-start justify-between mb-4">
-                              <div>
-                                <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                                  <User className="w-5 h-5 text-blue-600" />
-                                  {condutor.usuarioNome}
-                                </h3>
-                                <p className="text-sm text-gray-500 mt-1">{condutor.usuarioEmail}</p>
+                    <div className="text-sm text-gray-500">
+                      {condutoresFiltrados.length} de {condutores.length} condutores
+                    </div>
+                  </div>
+
+                  {/* Lista de Condutores */}
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      Condutores Cadastrados
+                    </h2>
+
+                    {condutoresFiltrados.length === 0 ? (
+                      <div className="text-center py-12">
+                        <User className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-4 text-lg font-medium text-gray-900">
+                          {condutores.length === 0 ? "Nenhum condutor cadastrado" : "Nenhum condutor encontrado"}
+                        </h3>
+                        <p className="mt-2 text-gray-500">
+                          {condutores.length === 0 
+                            ? "Comece cadastrando o primeiro condutor." 
+                            : "Tente ajustar os termos da pesquisa."}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {condutoresFiltrados.map((condutor) => (
+                          <Card key={condutor.idCondutor} className="relative">
+                            <CardContent className="pt-6">
+                              <div className="flex items-start justify-between mb-4">
+                                <div>
+                                  <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                                    <User className="w-5 h-5 text-blue-600" />
+                                    {condutor.usuarioNome}
+                                  </h3>
+                                  <p className="text-sm text-gray-500 mt-1">{condutor.usuarioEmail}</p>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditCondutor(condutor)}
+                                    title="Editar Condutor"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDeleteCondutor(condutor.idCondutor)}
+                                    title="Deletar Condutor"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="flex gap-1">
+                              
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Matrícula:</span>
+                                  <span className="font-medium">{condutor.matricula}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">ID Usuário:</span>
+                                  <span className="font-medium">{condutor.usuarioId}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">ID Condutor:</span>
+                                  <span className="font-medium">{condutor.idCondutor}</span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            {/* Tab de Alertas */}
+            <TabsContent value="alertas" className="p-6">
+              {alertasLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <p className="text-gray-600">Carregando alertas...</p>
+                </div>
+              ) : (
+                <Tabs defaultValue="pendentes">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="pendentes">
+                      Pendentes de Aprovação ({pendentes.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="ativos">
+                      Alertas Ativos ({alertas.length})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="pendentes" className="space-y-4">
+                    {pendentes.length === 0 && (
+                      <p className="text-gray-500 text-center py-8">Nenhum incidente pendente.</p>
+                    )}
+                    {pendentes.map((inc) => (
+                      <Card key={inc.idIncidente} className="border-l-4 border-l-yellow-500">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <AlertTriangle className="text-yellow-600"/> Incidente Reportado
+                          </CardTitle>
+                          <CardDescription>
+                            {inc.condutorNome && `Por: ${inc.condutorNome} em `}{new Date(inc.dataHora).toLocaleString()}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="mb-4 text-lg">{inc.descricao}</p>
+                          <div className="flex gap-3">
+                            <Button 
+                              onClick={() => handleAprovar(inc.idIncidente)} 
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4"/> Aprovar e Publicar
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              onClick={() => handleRejeitar(inc.idIncidente)} 
+                              className="text-red-600"
+                            >
+                              <XCircle className="mr-2 h-4 w-4"/> Rejeitar
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </TabsContent>
+
+                  <TabsContent value="ativos" className="space-y-4">
+                    {alertas.length === 0 && (
+                      <p className="text-gray-500 text-center py-8">Nenhum alerta ativo.</p>
+                    )}
+                    {alertas.map((alerta) => (
+                      <Card key={alerta.idAlerta}>
+                        <CardContent className="flex justify-between items-center pt-6">
+                          <div>
+                            <h3 className="font-bold text-lg">{alerta.titulo}</h3>
+                            <p className="text-gray-700 mt-1">{alerta.mensagem}</p>
+                            <span className="text-xs text-gray-400 block mt-2">
+                              {new Date(alerta.dataHoraEnvio).toLocaleString()}
+                            </span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => handleDeletarAlerta(alerta.idAlerta)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-5 w-5"/>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </TabsContent>
+                </Tabs>
+              )}
+            </TabsContent>
+
+            {/* Tab de Linhas */}
+            <TabsContent value="linhas" className="p-6">
+              {linhasLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <p className="text-gray-600">Carregando linhas...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Formulário de Cadastro/Edição */}
+                  <Card className="mb-8">
+                    <form onSubmit={handleSubmitLinha}>
+                      <CardHeader>
+                        <CardTitle>
+                          {editingId ? "Editar Linha" : "Cadastrar Nova Linha"}
+                        </CardTitle>
+                        <CardDescription>
+                          Preencha os dados abaixo para {editingId ? "salvar as alterações" : "adicionar uma nova linha"}.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid gap-3">
+                          <Label htmlFor="nome">Nome da Linha</Label>
+                          <Input
+                            id="nome"
+                            placeholder="Ex: Parangaba-Mucuripe"
+                            value={nome}
+                            onChange={(e) => setNome(e.target.value)}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div className="grid gap-3">
+                          <Label htmlFor="numero">Número</Label>
+                          <Input
+                            id="numero"
+                            placeholder="Ex: VLT-01"
+                            value={numero}
+                            onChange={(e) => setNumero(e.target.value)}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-end gap-4">
+                        {editingId && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={resetForm}
+                            disabled={isSubmitting}
+                          >
+                            Cancelar Edição
+                          </Button>
+                        )}
+                        <Button type="submit" disabled={isSubmitting}>
+                          {editingId ? "Salvar Alterações" : "Cadastrar Linha"}
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  </Card>
+
+                  {/* Lista de Linhas */}
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      Linhas Cadastradas ({linhas.length})
+                    </h2>
+
+                    {linhas.length === 0 ? (
+                      <p className="text-center text-gray-500 py-8">Nenhuma linha cadastrada.</p>
+                    ) : (
+                      linhas.map((linha) => {
+                        const estacoesDaLinha = estacoes.filter(
+                          (e) => e.linha?.idLinha === linha.idLinha
+                        );
+
+                        return (
+                          <Card key={linha.idLinha} className="p-6">
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <h3 className="text-xl font-semibold text-gray-800">
+                                  {linha.nome}
+                                </h3>
+                                <p className="text-gray-500">
+                                  Código: {linha.numero || "N/A"}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleEditCondutor(condutor)}
-                                  title="Editar Condutor"
+                                  onClick={() => handleEditClick(linha)}
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
                                 </Button>
                                 <Button
                                   variant="destructive"
                                   size="sm"
-                                  onClick={() => handleDeleteCondutor(condutor.idCondutor)}
-                                  title="Deletar Condutor"
+                                  onClick={() => handleDeleteLinha(linha.idLinha)}
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Excluir
                                 </Button>
                               </div>
                             </div>
-                            
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Matrícula:</span>
-                                <span className="font-medium">{condutor.matricula}</span>
+
+                            {estacoesDaLinha.length > 0 ? (
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-3">
+                                  Estações ({estacoesDaLinha.length})
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                  {estacoesDaLinha.map((estacao) => (
+                                    <div
+                                      key={estacao.idEstacao}
+                                      className="bg-gray-50 border rounded-lg p-3"
+                                    >
+                                      <p className="font-medium text-gray-800">
+                                        {estacao.nome}
+                                      </p>
+                                      <p className="text-sm text-gray-500 mt-1">
+                                        {estacao.endereco || "Endereço não informado"}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">ID Usuário:</span>
-                                <span className="font-medium">{condutor.usuarioId}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">ID Condutor:</span>
-                                <span className="font-medium">{condutor.idCondutor}</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                            ) : (
+                              <p className="text-gray-500 italic">
+                                Nenhuma estação cadastrada nesta linha.
+                              </p>
+                            )}
+                          </Card>
+                        );
+                      })
+                    )}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            {/* Tab de Estações */}
+            <TabsContent value="estacoes" className="p-6">
+              {linhasLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <p className="text-gray-600">Carregando estações...</p>
                 </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Tab de Alertas */}
-        {activeTab === "alertas" && (
-          <div className="p-6">
-            {alertasLoading ? (
-              <div className="flex justify-center items-center py-8">
-                <p className="text-gray-600">Carregando alertas...</p>
-              </div>
-            ) : (
-              <Tabs defaultValue="pendentes">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="pendentes">
-                    Pendentes de Aprovação ({pendentes.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="ativos">
-                    Alertas Ativos ({alertas.length})
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="pendentes" className="space-y-4">
-                  {pendentes.length === 0 && (
-                    <p className="text-gray-500 text-center py-8">Nenhum incidente pendente.</p>
-                  )}
-                  {pendentes.map((inc) => (
-                    <Card key={inc.idIncidente} className="border-l-4 border-l-yellow-500">
+              ) : (
+                <>
+                  {/* Formulário de Cadastro/Edição de Estação */}
+                  <Card className="mb-8">
+                    <form onSubmit={handleSubmitEstacao}>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                          <AlertTriangle className="text-yellow-600"/> Incidente Reportado
+                          <Building className="w-5 h-5" />
+                          {estacaoEditando ? "Editar Estação" : "Cadastrar Nova Estação"}
                         </CardTitle>
                         <CardDescription>
-                          {inc.condutorNome && `Por: ${inc.condutorNome} em `}{new Date(inc.dataHora).toLocaleString()}
+                          {estacaoEditando ? "Atualize os dados da estação" : "Preencha os dados para adicionar uma nova estação"}.
                         </CardDescription>
                       </CardHeader>
-                      <CardContent>
-                        <p className="mb-4 text-lg">{inc.descricao}</p>
-                        <div className="flex gap-3">
-                          <Button 
-                            onClick={() => handleAprovar(inc.idIncidente)} 
-                            className="bg-green-600 hover:bg-green-700"
+                      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid gap-3">
+                          <Label htmlFor="nomeEstacao" className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            Nome da Estação *
+                          </Label>
+                          <Input
+                            id="nomeEstacao"
+                            placeholder="Ex: Estação Central"
+                            value={nomeEstacao}
+                            onChange={(e) => setNomeEstacao(e.target.value)}
+                            disabled={isSubmittingEstacao}
+                            required
+                          />
+                        </div>
+                        <div className="grid gap-3">
+                          <Label htmlFor="enderecoEstacao" className="flex items-center gap-2">
+                            <Building className="w-4 h-4" />
+                            Endereço *
+                          </Label>
+                          <Input
+                            id="enderecoEstacao"
+                            placeholder="Ex: Rua Principal, 123"
+                            value={enderecoEstacao}
+                            onChange={(e) => setEnderecoEstacao(e.target.value)}
+                            disabled={isSubmittingEstacao}
+                            required
+                          />
+                        </div>
+                        <div className="grid gap-3">
+                          <Label htmlFor="idLinhaEstacao" className="flex items-center gap-2">
+                            <MapIcon className="w-4 h-4" />
+                            Linha *
+                          </Label>
+                          <select
+                            id="idLinhaEstacao"
+                            value={idLinhaEstacao}
+                            onChange={(e) => setIdLinhaEstacao(Number(e.target.value) || "")}
+                            disabled={isSubmittingEstacao}
+                            className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            required
                           >
-                            <CheckCircle className="mr-2 h-4 w-4"/> Aprovar e Publicar
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => handleRejeitar(inc.idIncidente)} 
-                            className="text-red-600"
-                          >
-                            <XCircle className="mr-2 h-4 w-4"/> Rejeitar
-                          </Button>
+                            <option value="">Selecione uma linha</option>
+                            {linhas.map((linha) => (
+                              <option key={linha.idLinha} value={linha.idLinha}>
+                                {linha.nome} ({linha.numero})
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </CardContent>
-                    </Card>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="ativos" className="space-y-4">
-                  {alertas.length === 0 && (
-                    <p className="text-gray-500 text-center py-8">Nenhum alerta ativo.</p>
-                  )}
-                  {alertas.map((alerta) => (
-                    <Card key={alerta.idAlerta}>
-                      <CardContent className="flex justify-between items-center pt-6">
-                        <div>
-                          <h3 className="font-bold text-lg">{alerta.titulo}</h3>
-                          <p className="text-gray-700 mt-1">{alerta.mensagem}</p>
-                          <span className="text-xs text-gray-400 block mt-2">
-                            {new Date(alerta.dataHoraEnvio).toLocaleString()}
-                          </span>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => handleDeletarAlerta(alerta.idAlerta)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-5 w-5"/>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </TabsContent>
-              </Tabs>
-            )}
-          </div>
-        )}
-
-        {/* Tab de Linhas */}
-        {activeTab === "linhas" && (
-          <div className="p-6">
-            {linhasLoading ? (
-              <div className="flex justify-center items-center py-8">
-                <p className="text-gray-600">Carregando linhas...</p>
-              </div>
-            ) : (
-              <>
-                {/* Formulário de Cadastro/Edição */}
-                <Card className="mb-8">
-                  <form onSubmit={handleSubmitLinha}>
-                    <CardHeader>
-                      <CardTitle>
-                        {editingId ? "Editar Linha" : "Cadastrar Nova Linha"}
-                      </CardTitle>
-                      <CardDescription>
-                        Preencha os dados abaixo para {editingId ? "salvar as alterações" : "adicionar uma nova linha"}.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="grid gap-3">
-                        <Label htmlFor="nome">Nome da Linha</Label>
-                        <Input
-                          id="nome"
-                          placeholder="Ex: Parangaba-Mucuripe"
-                          value={nome}
-                          onChange={(e) => setNome(e.target.value)}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                      <div className="grid gap-3">
-                        <Label htmlFor="numero">Número</Label>
-                        <Input
-                          id="numero"
-                          placeholder="Ex: VLT-01"
-                          value={numero}
-                          onChange={(e) => setNumero(e.target.value)}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-end gap-4">
-                      {editingId && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={resetForm}
-                          disabled={isSubmitting}
-                        >
-                          Cancelar Edição
-                        </Button>
-                      )}
-                      <Button type="submit" disabled={isSubmitting}>
-                        {editingId ? "Salvar Alterações" : "Cadastrar Linha"}
-                      </Button>
-                    </CardFooter>
-                  </form>
-                </Card>
-
-                {/* Lista de Linhas */}
-                <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    Linhas Cadastradas ({linhas.length})
-                  </h2>
-
-                  {linhas.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">Nenhuma linha cadastrada.</p>
-                  ) : (
-                    linhas.map((linha) => {
-                      const estacoesDaLinha = estacoes.filter(
-                        (e) => e.linha?.idLinha === linha.idLinha
-                      );
-
-                      return (
-                        <Card key={linha.idLinha} className="p-6">
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              <h3 className="text-xl font-semibold text-gray-800">
-                                {linha.nome}
-                              </h3>
-                              <p className="text-gray-500">
-                                Código: {linha.numero || "N/A"}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditClick(linha)}
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeleteLinha(linha.idLinha)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Excluir
-                              </Button>
-                            </div>
-                          </div>
-
-                          {estacoesDaLinha.length > 0 ? (
-                            <div>
-                              <h4 className="font-medium text-gray-700 mb-3">
-                                Estações ({estacoesDaLinha.length})
-                              </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {estacoesDaLinha.map((estacao) => (
-                                  <div
-                                    key={estacao.idEstacao}
-                                    className="bg-gray-50 border rounded-lg p-3"
-                                  >
-                                    <p className="font-medium text-gray-800">
-                                      {estacao.nome}
-                                    </p>
-                                    <p className="text-sm text-gray-500 mt-1">
-                                      {estacao.endereco || "Endereço não informado"}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-gray-500 italic">
-                              Nenhuma estação cadastrada nesta linha.
-                            </p>
-                          )}
-                        </Card>
-                      );
-                    })
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-            {activeTab === "estacoes" && (
-    <div className="p-6">
-        {linhasLoading ? ( // Usando linhasLoading porque carregarLinhas é chamada
-        <div className="flex justify-center items-center py-8">
-            <p className="text-gray-600">Carregando estações...</p>
-        </div>
-        ) : (
-        <>
-            {/* Formulário de Cadastro/Edição de Estação */}
-            <Card className="mb-8">
-            <form onSubmit={handleSubmitEstacao}>
-                <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Building className="w-5 h-5" />
-                    {estacaoEditando ? "Editar Estação" : "Cadastrar Nova Estação"}
-                </CardTitle>
-                <CardDescription>
-                    {estacaoEditando ? "Atualize os dados da estação" : "Preencha os dados para adicionar uma nova estação"}.
-                </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="grid gap-3">
-                    <Label htmlFor="nomeEstacao" className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    Nome da Estação *
-                    </Label>
-                    <Input
-                    id="nomeEstacao"
-                    placeholder="Ex: Estação Central"
-                    value={nomeEstacao}
-                    onChange={(e) => setNomeEstacao(e.target.value)}
-                    disabled={isSubmittingEstacao}
-                    required
-                    />
-                </div>
-                <div className="grid gap-3">
-                    <Label htmlFor="enderecoEstacao" className="flex items-center gap-2">
-                    <Building className="w-4 h-4" />
-                    Endereço *
-                    </Label>
-                    <Input
-                    id="enderecoEstacao"
-                    placeholder="Ex: Rua Principal, 123"
-                    value={enderecoEstacao}
-                    onChange={(e) => setEnderecoEstacao(e.target.value)}
-                    disabled={isSubmittingEstacao}
-                    required
-                    />
-                </div>
-                <div className="grid gap-3">
-                    <Label htmlFor="idLinhaEstacao" className="flex items-center gap-2">
-                    <MapIcon className="w-4 h-4" />
-                    Linha *
-                    </Label>
-                    <select
-                    id="idLinhaEstacao"
-                    value={idLinhaEstacao}
-                    onChange={(e) => setIdLinhaEstacao(Number(e.target.value))}
-                    disabled={isSubmittingEstacao}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                    >
-                    <option value="">Selecione uma linha</option>
-                    {linhas.map((linha) => (
-                        <option key={linha.idLinha} value={linha.idLinha}>
-                        {linha.nome} ({linha.numero})
-                        </option>
-                    ))}
-                    </select>
-                </div>
-                </CardContent>
-                <CardFooter className="flex justify-end gap-4">
-                {estacaoEditando && (
-                    <Button
-                    type="button"
-                    variant="outline"
-                    onClick={resetFormEstacao}
-                    disabled={isSubmittingEstacao}
-                    >
-                    Cancelar Edição
-                    </Button>
-                )}
-                <Button type="submit" disabled={isSubmittingEstacao}>
-                    {estacaoEditando ? "Salvar Alterações" : "Cadastrar Estação"}
-                </Button>
-                </CardFooter>
-            </form>
-            </Card>
-
-            {/* Search Bar para Estações */}
-            <div className="flex justify-between items-center mb-6">
-            <div className="relative w-80">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                type="text"
-                placeholder="Pesquisar estações..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-            </div>
-            <div className="text-sm text-gray-500">
-                {estacoesFiltradas.length} de {estacoes.length} estações
-            </div>
-            </div>
-
-            {/* Lista de Estações */}
-            <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-800">
-                Estações Cadastradas
-            </h2>
-
-            {estacoesFiltradas.length === 0 ? (
-                <div className="text-center py-12">
-                <MapPin className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-4 text-lg font-medium text-gray-900">
-                    {estacoes.length === 0 ? "Nenhuma estação cadastrada" : "Nenhuma estação encontrada"}
-                </h3>
-                <p className="mt-2 text-gray-500">
-                    {estacoes.length === 0 
-                    ? "Comece cadastrando a primeira estação." 
-                    : "Tente ajustar os termos da pesquisa."}
-                </p>
-                </div>
-            ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {estacoesFiltradas.map((estacao) => (
-                    <Card key={estacao.idEstacao} className="relative">
-                    <CardContent className="pt-6">
-                        <div className="flex items-start justify-between mb-4">
-                        <div>
-                            <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                            <MapPin className="w-5 h-5 text-blue-600" />
-                            {estacao.nome}
-                            </h3>
-                            <p className="text-sm text-gray-500 mt-1">{estacao.endereco}</p>
-                        </div>
-                        <div className="flex gap-1">
-                            <Button
+                      <CardFooter className="flex justify-end gap-4">
+                        {estacaoEditando && (
+                          <Button
+                            type="button"
                             variant="outline"
-                            size="sm"
-                            onClick={() => handleEditEstacao(estacao)}
-                            title="Editar Estação"
-                            >
-                            <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteEstacao(estacao.idEstacao)}
-                            title="Deletar Estação"
-                            >
-                            <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        </div>
-                        
-                        <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Linha:</span>
-                            <span className="font-medium">{estacao.linha?.nome || "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Código da Linha:</span>
-                            <span className="font-medium">{estacao.linha?.numero || "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">ID Estação:</span>
-                            <span className="font-medium">{estacao.idEstacao}</span>
-                        </div>
-                        </div>
-                    </CardContent>
-                    </Card>
-                ))}
-                </div>
-            )}
-            </div>
-        </>
-        )}
-    </div>
-    )}
+                            onClick={resetFormEstacao}
+                            disabled={isSubmittingEstacao}
+                          >
+                            Cancelar Edição
+                          </Button>
+                        )}
+                        <Button type="submit" disabled={isSubmittingEstacao}>
+                          {estacaoEditando ? "Salvar Alterações" : "Cadastrar Estação"}
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  </Card>
 
-        {/* Outras tabs (em desenvolvimento) */}
-        {["vlts", "viagens"].includes(activeTab) && (
-          <div className="p-6">
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🚧</div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                Funcionalidade em Desenvolvimento
-              </h3>
-              <p className="text-gray-500">
-                O {activeTab === "vlts" ? "gerenciamento de VLTs" : 
-                  "gerenciamento de viagens"} estará disponível em breve.
-              </p>
-            </div>
+                  {/* Search Bar para Estações */}
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="relative w-80">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        placeholder="Pesquisar estações..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {estacoesFiltradas.length} de {estacoes.length} estações
+                    </div>
+                  </div>
+
+                  {/* Lista de Estações */}
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      Estações Cadastradas
+                    </h2>
+
+                    {estacoesFiltradas.length === 0 ? (
+                      <div className="text-center py-12">
+                        <MapPin className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-4 text-lg font-medium text-gray-900">
+                          {estacoes.length === 0 ? "Nenhuma estação cadastrada" : "Nenhuma estação encontrada"}
+                        </h3>
+                        <p className="mt-2 text-gray-500">
+                          {estacoes.length === 0 
+                            ? "Comece cadastrando a primeira estação." 
+                            : "Tente ajustar os termos da pesquisa."}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {estacoesFiltradas.map((estacao) => (
+                          <Card key={estacao.idEstacao} className="relative">
+                            <CardContent className="pt-6">
+                              <div className="flex items-start justify-between mb-4">
+                                <div>
+                                  <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                                    <MapPin className="w-5 h-5 text-blue-600" />
+                                    {estacao.nome}
+                                  </h3>
+                                  <p className="text-sm text-gray-500 mt-1">{estacao.endereco}</p>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditEstacao(estacao)}
+                                    title="Editar Estação"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDeleteEstacao(estacao.idEstacao)}
+                                    title="Deletar Estação"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Linha:</span>
+                                  <span className="font-medium">{estacao.linha?.nome || "N/A"}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Código da Linha:</span>
+                                  <span className="font-medium">{estacao.linha?.numero || "N/A"}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">ID Estação:</span>
+                                  <span className="font-medium">{estacao.idEstacao}</span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            {/* Tab de VLTs */}
+            <TabsContent value="vlts" className="p-6">
+              {vltLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <p className="text-gray-600">Carregando VLTs...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Formulário de Cadastro/Edição de VLT */}
+                  <Card className="mb-8">
+                    <form onSubmit={handleSubmitVlt}>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Train className="w-5 h-5" />
+                          {vltEditando ? "Editar VLT" : "Cadastrar Novo VLT"}
+                        </CardTitle>
+                        <CardDescription>
+                          {vltEditando ? "Atualize os dados do VLT" : "Preencha os dados para adicionar um novo VLT"}.
+                        </CardDescription>
+                      </CardHeader>
+
+                      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid gap-3">
+                          <Label htmlFor="numeroVlt" className="flex items-center gap-2">
+                            <Hash className="w-4 h-4" />
+                            Número do VLT *
+                          </Label>
+                          <Input
+                            id="numeroVlt"
+                            placeholder="Ex: 302"
+                            value={numeroVlt}
+                            onChange={(e) => setNumeroVlt(e.target.value)}
+                            disabled={isSubmittingVlt}
+                            required
+                          />
+                        </div>
+
+                        <div className="grid gap-3">
+                          <Label htmlFor="capacidadeVlt" className="flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            Capacidade *
+                          </Label>
+                          <Input
+                            id="capacidadeVlt"
+                            type="number"
+                            placeholder="Ex: 150"
+                            value={capacidadeVlt}
+                            onChange={(e) => setCapacidadeVlt(Number(e.target.value))}
+                            disabled={isSubmittingVlt}
+                            required
+                          />
+                        </div>
+
+                        <div className="grid gap-3">
+                          <Label htmlFor="linhaVlt" className="flex items-center gap-2">
+                            <MapIcon className="w-4 h-4" />
+                            Linha *
+                          </Label>
+                          <select
+                            id="linhaVlt"
+                            value={idLinhaVlt}
+                            onChange={(e) => setIdLinhaVlt(Number(e.target.value))}
+                            disabled={isSubmittingVlt}
+                            className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            required
+                          >
+                            <option value="">Selecione uma linha</option>
+                            {linhas.map((linha) => (
+                              <option key={linha.idLinha} value={linha.idLinha}>
+                                {linha.nome} ({linha.numero})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </CardContent>
+
+                      <CardFooter className="flex justify-end gap-4">
+                        {vltEditando && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={resetFormVlt}
+                            disabled={isSubmittingVlt}
+                          >
+                            Cancelar Edição
+                          </Button>
+                        )}
+                        <Button type="submit" disabled={isSubmittingVlt}>
+                          {vltEditando ? "Salvar Alterações" : "Cadastrar VLT"}
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  </Card>
+
+                  {/* Search Bar */}
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="relative w-80">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        placeholder="Pesquisar VLTs..."
+                        value={searchTermVlt}
+                        onChange={(e) => setSearchTermVlt(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {vltsFiltrados.length} de {vlts.length} VLTs
+                    </div>
+                  </div>
+
+                  {/* Lista de VLTs */}
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-gray-800">VLTs Cadastrados</h2>
+
+                    {vltsFiltrados.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Train className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-4 text-lg font-medium text-gray-900">
+                          {vlts.length === 0 ? "Nenhum VLT cadastrado" : "Nenhum VLT encontrado"}
+                        </h3>
+                        <p className="mt-2 text-gray-500">
+                          {vlts.length === 0
+                            ? "Comece cadastrando o primeiro VLT."
+                            : "Tente ajustar os termos da pesquisa."}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {vltsFiltrados.map((vlt) => (
+                          <Card key={vlt.idVlt} className="relative">
+                            <CardContent className="pt-6">
+                              <div className="flex items-start justify-between mb-4">
+                                <div>
+                                  <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                                    <Train className="w-5 h-5 text-blue-600" />
+                                    VLT {vlt.numero}
+                                  </h3>
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    Capacidade: {vlt.capacidade}
+                                  </p>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditVlt(vlt)}
+                                    title="Editar VLT"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDeleteVlt(vlt.idVlt)}
+                                    title="Deletar VLT"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Linha:</span>
+                                  <span className="font-medium">
+                                    {vlt.linha?.nome || "N/A"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Código Linha:</span>
+                                  <span className="font-medium">
+                                    {vlt.linha?.numero || "N/A"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">ID VLT:</span>
+                                  <span className="font-medium">{vlt.idVlt}</span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            {/* Tab de Viagens */}
+            <TabsContent value="viagens" className="p-6">
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🚧</div>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  Funcionalidade em Desenvolvimento
+                </h3>
+                <p className="text-gray-500">
+                  O gerenciamento de viagens estará disponível em breve.
+                </p>
+              </div>
+            </TabsContent>
           </div>
-        )}
-      </div>
+        </Tabs>
     </div>
   );
 }

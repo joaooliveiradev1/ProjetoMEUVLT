@@ -2,6 +2,23 @@ import api from "./api";
 
 // --- INTERFACES ---
 
+export interface CriarVltData {
+  numero: string;
+  capacidade: number;
+  idLinha: number;
+}
+
+export interface VltView {
+  idVlt: number;
+  numero: string;
+  capacidade: number;
+  linha?: {
+    idLinha: number;
+    nome: string;
+    numero: string;
+  };
+}
+
 export interface Alerta {
   idAlerta: number;
   titulo: string;
@@ -119,20 +136,13 @@ export async function deleteLinha(id: number) {
 }
 
 // --- 4. ESTAÇÕES ---
-// --- 4. ESTAÇÕES ---
-
-export async function getEstacoes() {
-  const response = await api.get("/estacoes");
 export async function getEstacoes() {
   const response = await api.get("/estacoes");
   return response.data;
 }
 
 // --- 5. USUÁRIOS E CONDUTORES ---
-// --- 5. USUÁRIOS E CONDUTORES ---
-
 export async function getUsuarioById(id: number) {
-  const response = await api.get(`/usuarios/${id}`);
   const response = await api.get(`/usuarios/${id}`);
   return response.data;
 }
@@ -200,5 +210,35 @@ export async function updateEstacao(id: number, data: CriarEstacaoData) {
 
 export async function deleteEstacao(id: number) {
   const response = await api.delete(`/estacoes/${id}`);
+  return response.data;
+}
+
+export async function getVlts(): Promise<VltView[]> {
+  try {
+    const response = await api.get("/vlt");
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Erro ao buscar VLTs:", error);
+    return [];
+  }
+}
+
+export async function getVltById(id: number) {
+  const response = await api.get(`/vlt/${id}`);
+  return response.data;
+}
+
+export async function createVlt(data: CriarVltData) {
+  const response = await api.post("/vlt", data);
+  return response.data;
+}
+
+export async function updateVlt(id: number, data: CriarVltData) {
+  const response = await api.put(`/vlt/${id}`, data);
+  return response.data;
+}
+
+export async function deleteVlt(id: number) {
+  const response = await api.delete(`/vlt/${id}`);
   return response.data;
 }
