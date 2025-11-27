@@ -103,10 +103,10 @@ export default function PassageiroLinhasPage() {
       <Tabs defaultValue="linhas" className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-8">
           <TabsTrigger value="linhas" className="text-base">
-            🚉 Linhas e Horários
+           Linhas e Horários
           </TabsTrigger>
           <TabsTrigger value="alertas" className="text-base relative">
-            ⚠️ Alertas e Avisos
+             Alertas e Avisos
             {alertas.length > 0 && (
               <Badge variant="destructive" className="ml-2 h-5 px-1.5 rounded-full text-[10px]">
                 {alertas.length}
