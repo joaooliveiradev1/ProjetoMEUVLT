@@ -35,7 +35,7 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/email/{email}")
+    @GetMapping("/email/{email:.+}")
     public ResponseEntity<UsuarioDTO> getByEmail(@PathVariable String email) {
         return ResponseEntity.ok(usuarioService.buscarPorEmail(email));
     }

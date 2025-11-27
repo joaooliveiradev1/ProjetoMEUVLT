@@ -1,6 +1,6 @@
 import api from "./api";
 
-// --- INTERFACES ---
+
 
 export interface CriarVltData {
   numero: string;
@@ -59,16 +59,16 @@ export interface LinhaData {
   numero: string;
 }
 
-// Adicionando interface completa para Condutor
+
 export interface Condutor {
   idCondutor: number;
   matricula: string;
   usuarioId: number;
   usuarioNome: string;
-  usuarioEmail: string; // Essencial para a comparação
+  usuarioEmail: string; 
 }
 
-// --- 1. ALERTAS (ADMIN & PASSAGEIRO) ---
+
 
 export async function getAlertas(): Promise<Alerta[]> {
   try {
@@ -90,7 +90,7 @@ export async function deleteAlerta(id: number) {
   return response.data;
 }
 
-// --- 2. INCIDENTES (FLUXO DE APROVAÇÃO) ---
+
 
 export async function getIncidentesPendentes(): Promise<IncidenteView[]> {
   try {
@@ -107,13 +107,13 @@ export async function atualizarStatusIncidente(id: number, status: "PUBLICADO" |
   return response.data;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export async function createIncidente(data: any) {
   const response = await api.post("/incidente", data);
   return response.data;
 }
 
-// --- 3. LINHAS (CRUD) ---
+
 
 export async function getLinhas() {
   const response = await api.get("/api/linhas");
@@ -135,19 +135,19 @@ export async function deleteLinha(id: number) {
   return response.data;
 }
 
-// --- 4. ESTAÇÕES ---
+
 export async function getEstacoes() {
   const response = await api.get("/estacoes");
   return response.data;
 }
 
-// --- 5. USUÁRIOS E CONDUTORES ---
+
 export async function getUsuarioById(id: number) {
   const response = await api.get(`/usuarios/${id}`);
   return response.data;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export async function updateUsuario(id: number, data: any) {
   const response = await api.put(`/usuarios/${id}`, data);
   return response.data;
@@ -158,7 +158,7 @@ export async function getCondutorById(id: number) {
     return response.data;
 }
 
-// Nova função para pegar todos e filtrar no front
+
 export async function getAllCondutores(): Promise<Condutor[]> {
     try {
         const response = await api.get("/condutor");
@@ -240,5 +240,15 @@ export async function updateVlt(id: number, data: CriarVltData) {
 
 export async function deleteVlt(id: number) {
   const response = await api.delete(`/vlt/${id}`);
+  return response.data;
+}
+
+export async function getUsuarioByEmail(email: string) {
+  const response = await api.get(`/usuarios/email/${email}`);
+  return response.data;
+}
+
+export async function getCondutorByEmail(email: string) {
+  const response = await api.get(`/condutor/email/${email}`);
   return response.data;
 }

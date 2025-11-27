@@ -1,39 +1,42 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUsuarioById, getCondutorById, updateUsuario } from "@/services/vltService";
+import { getCondutorByEmail, updateUsuario } from "@/services/vltService"; // Usando a nova função
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { TrainFront, Save, Award, MapPin } from "lucide-react";
+import { TrainFront, Save, Award } from "lucide-react";
 
 export default function CondutorPerfilPage() {
   const [loading, setLoading] = useState(true);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [matricula, setMatricula] = useState("");
-  
-  
-  const userId = 2; 
-  const condutorId = 1; 
+  const [userId, setUserId] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
       try {
-       
-        const [userData, condutorData] = await Promise.all([
-             getUsuarioById(userId),
-             getCondutorById(condutorId)
-        ]);
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const base64Url = token.split('.')[1];
+        const jsonPayload = JSON.parse(decodeURIComponent(window.atob(base64Url.replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+        const userEmail = jsonPayload.sub;
+
+        // Busca dados completos do condutor pelo email
+        const data = await getCondutorByEmail(userEmail);
         
-        setNome(userData.nome);
-        setEmail(userData.email);
-        setMatricula(condutorData.matricula);
+        setUserId(data.usuarioId);
+        setNome(data.usuarioNome);
+        setEmail(data.usuarioEmail);
+        setMatricula(data.matricula);
+
       } catch (error) {
-        console.error("Erro", error);
+        console.error("Erro ao carregar perfil condutor:", error);
       } finally {
         setLoading(false);
       }
@@ -42,8 +45,9 @@ export default function CondutorPerfilPage() {
   }, []);
 
   const handleSave = async () => {
-      
+      if(!userId) return;
       try {
+        // Atualiza apenas os dados do usuário (nome/email), matrícula é fixa
         await updateUsuario(userId, { nome, email });
         alert("Dados atualizados!");
       } catch(e) { alert("Erro ao atualizar"); }
@@ -56,23 +60,21 @@ export default function CondutorPerfilPage() {
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Perfil Condutor</h1>
 
       <div className="grid gap-6">
-       
-        <Card className="border-l-4 border-l-black -600">
+        <Card className="border-l-4 border-l-slate-600">
             <CardHeader className="flex flex-row items-center gap-4 pb-2">
-            <Avatar className="h-16 w-16 bg-black -200 text-black -600">
-                <AvatarFallback className="text-xl font-bold">CN</AvatarFallback>
+            <Avatar className="h-16 w-16 bg-slate-200 text-slate-600">
+                <AvatarFallback className="text-xl font-bold">{nome ? nome.substring(0,2).toUpperCase() : "CN"}</AvatarFallback>
             </Avatar>
             <div>
                 <CardTitle className="text-xl">{nome}</CardTitle>
                 <div className="flex items-center gap-2 mt-1">
-                    <Badge className="bg-black -600">Condutor Oficial</Badge>
+                    <Badge className="bg-slate-600">Condutor Oficial</Badge>
                     <span className="text-sm text-gray-500">Matrícula: {matricula}</span>
                 </div>
             </div>
             </CardHeader>
         </Card>
 
-        
         <Card>
             <CardHeader><CardTitle>Dados Pessoais</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -94,19 +96,18 @@ export default function CondutorPerfilPage() {
             </CardFooter>
         </Card>
 
-        
         <div className="grid grid-cols-2 gap-4">
             <Card className="bg-slate-50 border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-6">
                     <Award className="h-8 w-8 text-yellow-500 mb-2" />
-                    <span className="text-2xl font-bold">4.8</span>
-                    <span className="text-xs text-gray-500">Média de Avaliação</span>
+                    <span className="text-2xl font-bold">Excelente</span>
+                    <span className="text-xs text-gray-500">Status</span>
                 </CardContent>
             </Card>
             <Card className="bg-slate-50 border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-6">
                     <TrainFront className="h-8 w-8 text-blue-500 mb-2" />
-                    <span className="text-2xl font-bold">124</span>
+                    <span className="text-2xl font-bold">--</span>
                     <span className="text-xs text-gray-500">Viagens Realizadas</span>
                 </CardContent>
             </Card>

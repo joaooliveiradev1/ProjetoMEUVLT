@@ -59,7 +59,7 @@ public class CondutorController {
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/email/{email}")
+    @GetMapping("/email/{email:.+}")
     public ResponseEntity<CondutorDTO> getByEmail(@PathVariable String email) {
         return ResponseEntity.ok(condutorService.buscarPorEmailUsuario(email));
     }
