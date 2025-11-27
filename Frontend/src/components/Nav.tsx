@@ -15,9 +15,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Nav() {
- 
+  // Rotas padrão apontando para as URLs ofuscadas
   const [perfilRoute, setPerfilRoute] = useState("/auth");
-  const [linhasRoute, setLinhasRoute] = useState("/passageiro/linhas");
+  const [linhasRoute, setLinhasRoute] = useState("/secure/v1/dashboard"); 
   
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
@@ -37,25 +37,22 @@ export default function Nav() {
         const payload = JSON.parse(jsonPayload);
         const role = payload.role;
         
-        console.log("Role detectada:", role); 
-
-       
+        // Mapeamento para rotas ofuscadas
         if (role === "ROLE_Administrador" || role === "Administrador") {
-          setPerfilRoute("/adm/perfil");
-          setLinhasRoute("/adm/linhas"); 
+          setPerfilRoute("/secure/v3/account"); // Perfil Admin
+          setLinhasRoute("/secure/v3/master");  // Dashboard Admin
         } else if (role === "ROLE_Condutor" || role === "Condutor") {
-          setPerfilRoute("/condutor/perfil");
-          setLinhasRoute("/condutor/operacao"); 
+          setPerfilRoute("/secure/v2/account"); // Perfil Condutor
+          setLinhasRoute("/secure/v2/console"); // Operação Condutor
         } else {
-          setPerfilRoute("/passageiro/perfil");
-          setLinhasRoute("/passageiro/linhas");
+          setPerfilRoute("/secure/v1/account");   // Perfil Passageiro
+          setLinhasRoute("/secure/v1/dashboard"); // Linhas Passageiro
         }
 
       } catch (error) {
-        console.error("Erro ao decodificar token:", error);
-        
+        console.error("Erro token:", error);
         setPerfilRoute("/auth");
-        setLinhasRoute("/passageiro/linhas");
+        setLinhasRoute("/secure/v1/dashboard");
       }
     }
   }, []);
@@ -63,8 +60,7 @@ export default function Nav() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
-    
-    setLinhasRoute("/passageiro/linhas");
+    setLinhasRoute("/secure/v1/dashboard");
     setPerfilRoute("/auth");
     router.push("/auth");
   };
@@ -79,39 +75,11 @@ export default function Nav() {
       </div>
 
       <ul className="hidden md:flex list-none gap-8 text-gray-800 font-medium pr-20">
-        <li>
-          <Link
-            className="transition-colors duration-300 hover:text-blue-600"
-            href={"/"}
-          >
-            Início
-          </Link>
-        </li>
-        <li>
-          
-          <Link
-            className="transition-colors duration-300 hover:text-blue-600"
-            href={linhasRoute}
-          >
-            Linhas
-          </Link>
-        </li>
-        <li>
-          <Link
-            className="transition-colors duration-300 hover:text-blue-600"
-            href={"/#sobre"}
-          >
-            Sobre
-          </Link>
-        </li>
-        <li>
-          <Link
-            className="transition-colors duration-300 hover:text-blue-600"
-            href={"/#contato"}
-          >
-            Contato
-          </Link>
-        </li>
+        <li><Link className="hover:text-blue-600 transition-colors" href={"/"}>Início</Link></li>
+        {/* Link dinâmico: Vai para o dashboard correto baseado no login */}
+        <li><Link className="hover:text-blue-600 transition-colors" href={isLoggedIn ? linhasRoute : "/secure/v1/dashboard"}>Linhas</Link></li>
+        <li><Link className="hover:text-blue-600 transition-colors" href={"/#sobre"}>Sobre</Link></li>
+        <li><Link className="hover:text-blue-600 transition-colors" href={"/#contato"}>Contato</Link></li>
       </ul>
 
       <DropdownMenu>
@@ -130,14 +98,11 @@ export default function Nav() {
                   <User className="mr-2 h-4 w-4" /> Perfil
                 </Link>
               </DropdownMenuItem>
-              
-              
               <DropdownMenuItem asChild>
                 <Link href={linhasRoute} className="cursor-pointer">
-                  Ver Linhas
+                  Acessar Painel
                 </Link>
               </DropdownMenuItem>
-              
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                 Sair
@@ -147,16 +112,8 @@ export default function Nav() {
             <>
               <DropdownMenuLabel>Acesso</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href={"/auth"} className="cursor-pointer">
-                  Faça Login
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={"/auth"} className="cursor-pointer">
-                  Registre-se
-                </Link>
-              </DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href={"/auth"}>Login</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href={"/auth"}>Registro</Link></DropdownMenuItem>
             </>
           )}
         </DropdownMenuContent>
