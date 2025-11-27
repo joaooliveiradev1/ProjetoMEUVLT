@@ -1,5 +1,6 @@
 package com.meuvlt.demo.models.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -21,6 +22,7 @@ public class Linha {
     private String numero;
 
     @OneToMany(mappedBy = "linha")
+    @JsonIgnore
     private List<Viagem> viagens = new ArrayList<>();
 
     public int getIdLinha() {

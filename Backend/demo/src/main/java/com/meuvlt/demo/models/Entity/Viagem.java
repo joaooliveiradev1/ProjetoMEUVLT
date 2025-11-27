@@ -1,6 +1,7 @@
 package com.meuvlt.demo.models.Entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -34,6 +35,7 @@ public class Viagem {
     private Linha linha;
 
     @OneToMany(mappedBy = "viagem")
+    @JsonIgnore
     private List<Incidente> incidentes = new ArrayList<>();
 
     @OneToMany(mappedBy = "viagem")

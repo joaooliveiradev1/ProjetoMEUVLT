@@ -17,29 +17,27 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
         String path = request.getServletPath();
 
-        if (
-                path.startsWith("/auth/") || path.startsWith("/vlt") || path.startsWith("/api/vlt") ||
-                        path.startsWith("/linhas") || path.startsWith("/estacoes")
-        ) {
+        // Rotas públicas
+        if (path.startsWith("/auth/")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -47,16 +45,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = extractToken(request);
 
         if (token != null && jwtService.validateToken(token)) {
+
             Claims claims = jwtService.extractAllClaims(token);
             String email = claims.getSubject();
             String role = claims.get("role", String.class);
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            if (role != null && !role.startsWith("ROLE_")) {
+                role = "ROLE_" + role;
+            }
 
-            var authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
+            var authorities = List.of(new SimpleGrantedAuthority(role));
 
             UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+                    new UsernamePasswordAuthenticationToken(email, null, authorities);
 
             authToken.setDetails(
                     new WebAuthenticationDetailsSource().buildDetails(request)
