@@ -125,6 +125,7 @@ export default function CondutorOperacaoPage() {
       alert("Incidente reportado!");
       setTipoAlerta("");
       setDescAlerta("");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       alert("Erro ao enviar reporte.");
     } finally {

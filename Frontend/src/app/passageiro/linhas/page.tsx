@@ -64,9 +64,6 @@ export default function PassageiroLinhasPage() {
         getViagens(),
       ]);
       
-      // Debug para garantir que os dados estão chegando
-      console.log("Viagens carregadas:", viagensData);
-      
       setLinhas(linhasData);
       setEstacoes(estacoesData);
       setAlertas(alertasData);
