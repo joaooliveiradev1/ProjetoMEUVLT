@@ -49,6 +49,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/**").permitAll()
 
+                        // ⭐ CORREÇÃO: Permite edição de utilizador para quem estiver logado (Admin, Condutor ou Passageiro)
+                        .requestMatchers(HttpMethod.PUT, "/usuarios/**").authenticated()
+
                         // ⭐ Condutor pode criar incidentes
                         .requestMatchers(HttpMethod.POST, "/incidente/**")
                         .hasAnyAuthority("ROLE_Condutor", "Condutor",
@@ -63,7 +66,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/incidente/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
-                        // ⭐ Operações administrativas gerais
+                        // ⭐ Operações administrativas gerais (Bloqueia outros PUT/POST/DELETE)
                         .requestMatchers(HttpMethod.POST, "/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
                         .requestMatchers(HttpMethod.PUT, "/**")
@@ -71,11 +74,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 
-                        // ⭐ Qualquer outra rota requer autenticação
+
                         .anyRequest().authenticated()
                 )
 
-                // Filtro JWT antes da autenticação padrão
+
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

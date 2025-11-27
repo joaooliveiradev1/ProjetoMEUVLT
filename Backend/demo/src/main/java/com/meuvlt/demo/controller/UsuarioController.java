@@ -34,4 +34,9 @@ public class UsuarioController {
         usuarioService.deletarUsuario(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/email/{email}")
+    public ResponseEntity<UsuarioDTO> getByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(usuarioService.buscarPorEmail(email));
+    }
 }

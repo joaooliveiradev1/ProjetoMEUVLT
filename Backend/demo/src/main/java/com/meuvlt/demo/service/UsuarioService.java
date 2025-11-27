@@ -107,4 +107,10 @@ public class UsuarioService{
                 .authorities(usuario.getTipo().name())
                 .build();
     }
+
+    public UsuarioDTO buscarPorEmail(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + email));
+        return usuario.toDTO();
+    }
 }

@@ -121,4 +121,13 @@ public class CondutorService {
             return true;
         }).orElse(false);
     }
+    public CondutorDTO buscarPorEmailUsuario(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + email));
+
+        Condutor condutor = condutorRepository.findByUsuarioId(usuario.getIdUsuario())
+                .orElseThrow(() -> new RuntimeException("Perfil de condutor não encontrado para este usuário."));
+
+        return toDTO(condutor);
+    }
 }
