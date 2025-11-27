@@ -55,10 +55,10 @@ interface Estacao {
 }
 
 interface Vlt {
-  idVlt: number;
-  numero: string;
-  capacidade: number;
-  linha?: Linha;
+idVlt: number;
+codigo: string;
+status: string | null;
+localizacao: string | null;
 }
 
 interface Viagem {
@@ -108,16 +108,17 @@ export default function GerenciamentoSistema() {
   const [enderecoEstacao, setEnderecoEstacao] = useState("");
   const [idLinhaEstacao, setIdLinhaEstacao] = useState<number | "">();
 
-  const [vlts, setVlts] = useState<Vlt[]>([]);
+ const [vlts, setVlts] = useState<Vlt[]>([]);
   const [vltsFiltrados, setVltsFiltrados] = useState<Vlt[]>([]);
   const [vltLoading, setVltLoading] = useState(true);
 
-  const [numeroVlt, setNumeroVlt] = useState("");
-  const [capacidadeVlt, setCapacidadeVlt] = useState<number>(0);
-  const [idLinhaVlt, setIdLinhaVlt] = useState<number>(0);
+  const [codigoVlt, setCodigoVlt] = useState("");
+  const [statusVlt, setStatusVlt] = useState("ATIVO");
+  const [localizacaoVlt, setLocalizacaoVlt] = useState("");
 
   const [vltEditando, setVltEditando] = useState(false);
   const [idVltEditando, setIdVltEditando] = useState<number | null>(null);
+
   const [isSubmittingVlt, setIsSubmittingVlt] = useState(false);
   const [searchTermVlt, setSearchTermVlt] = useState("");
 
@@ -165,11 +166,8 @@ export default function GerenciamentoSistema() {
 
   useEffect(() => {
     const termo = searchTermVlt.toLowerCase();
-    const filtrados = vlts.filter(
-      (v) =>
-        v?.numero?.toLowerCase().includes(termo) ||
-        v?.linha?.nome?.toLowerCase().includes(termo) ||
-        String(v?.linha?.numero).includes(termo)
+    const filtrados = vlts.filter((v) =>
+    v?.codigo?.toLowerCase().includes(termo)
     );
     setVltsFiltrados(filtrados);
   }, [searchTermVlt, vlts]);
@@ -177,10 +175,10 @@ export default function GerenciamentoSistema() {
   useEffect(() => {
     const termo = searchTermViagem.toLowerCase();
     const filtrados = viagens.filter(viagem =>
-      (viagem.origem?.toLowerCase().includes(termo) || false) ||
-      (viagem.destino?.toLowerCase().includes(termo) || false) ||
-      (viagem.vlt?.numero?.toLowerCase().includes(termo) || false) ||
-      (viagem.condutor?.usuarioNome?.toLowerCase().includes(termo) || false)
+      viagem.origem.toLowerCase().includes(termo) ||
+      viagem.destino.toLowerCase().includes(termo) ||
+      viagem.vlt?.numero.toLowerCase().includes(termo) ||
+      viagem.condutor?.usuarioNome.toLowerCase().includes(termo)
     );
     setViagensFiltrados(filtrados);
   }, [searchTermViagem, viagens]);
@@ -504,27 +502,29 @@ export default function GerenciamentoSistema() {
   const resetFormVlt = () => {
     setVltEditando(false);
     setIdVltEditando(null);
-    setNumeroVlt("");
-    setCapacidadeVlt(0);
-    setIdLinhaVlt(0);
+    setCodigoVlt("");
+    setStatusVlt("ATIVO");
+    setLocalizacaoVlt("");
   };
 
-  const handleSubmitVlt = async (e: FormEvent<HTMLFormElement>) => {
+    const handleSubmitVlt = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmittingVlt(true);
 
     const payload = {
-      numero: numeroVlt,
-      capacidade: capacidadeVlt,
-      idLinha: idLinhaVlt
+      codigo: codigoVlt,
+      status: statusVlt,
+      localizacao: localizacaoVlt,
     };
 
     try {
-      if (vltEditando && idVltEditando) {
-        await updateVlt(idVltEditando, payload);
+      if (vltEditando && idVltEditando !== null) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await updateVlt(idVltEditando, payload as any);
         alert("VLT atualizado com sucesso!");
       } else {
-        await createVlt(payload);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await createVlt(payload as any);
         alert("VLT cadastrado com sucesso!");
       }
 
@@ -532,18 +532,21 @@ export default function GerenciamentoSistema() {
       carregarVlts();
     } catch (err) {
       console.error("Erro ao salvar VLT", err);
-      alert("Erro ao salvar VLT: " + (err instanceof Error ? err.message : "Erro desconhecido"));
+      alert(
+        "Erro ao salvar VLT: " +
+          (err instanceof Error ? err.message : "Erro desconhecido")
+      );
     } finally {
       setIsSubmittingVlt(false);
     }
   };
-
+  
   const handleEditVlt = (vlt: Vlt) => {
     setVltEditando(true);
     setIdVltEditando(vlt.idVlt);
-    setNumeroVlt(vlt.numero);
-    setCapacidadeVlt(vlt.capacidade);
-    setIdLinhaVlt(vlt.linha?.idLinha || 0);
+    setCodigoVlt(vlt.codigo || "");
+    setStatusVlt(vlt.status || "ATIVO");
+    setLocalizacaoVlt(vlt.localizacao || "");
   };
 
   const handleDeleteVlt = async (idVlt: number) => {
@@ -566,12 +569,14 @@ export default function GerenciamentoSistema() {
       setVltsFiltrados(data);
     } catch (err) {
       console.error("Erro ao carregar VLTs", err);
-      alert("Erro ao carregar VLTs: " + (err instanceof Error ? err.message : "Erro desconhecido"));
+      alert(
+        "Erro ao carregar VLTs: " +
+          (err instanceof Error ? err.message : "Erro desconhecido")
+      );
     } finally {
       setVltLoading(false);
     }
   };
-
 
   async function carregarViagens() {
     setViagensLoading(true);
@@ -1310,62 +1315,66 @@ export default function GerenciamentoSistema() {
                         {vltEditando ? "Editar VLT" : "Cadastrar Novo VLT"}
                       </CardTitle>
                       <CardDescription>
-                        {vltEditando ? "Atualize os dados do VLT" : "Preencha os dados para adicionar um novo VLT"}.
+                        {vltEditando
+                          ? "Atualize os dados do VLT"
+                          : "Preencha os dados para adicionar um novo VLT"}
+                        .
                       </CardDescription>
                     </CardHeader>
 
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Código */}
                       <div className="grid gap-3">
-                        <Label htmlFor="numeroVlt" className="flex items-center gap-2">
+                        <Label htmlFor="codigoVlt" className="flex items-center gap-2">
                           <Hash className="w-4 h-4" />
-                          Número do VLT *
+                          Código do VLT *
                         </Label>
                         <Input
-                          id="numeroVlt"
-                          placeholder="Ex: 302"
-                          value={numeroVlt}
-                          onChange={(e) => setNumeroVlt(e.target.value)}
+                          id="codigoVlt"
+                          placeholder="Ex: VLT-302"
+                          value={codigoVlt}
+                          onChange={(e) => setCodigoVlt(e.target.value)}
                           disabled={isSubmittingVlt}
                           required
                         />
                       </div>
 
+                      {/* Status */}
                       <div className="grid gap-3">
-                        <Label htmlFor="capacidadeVlt" className="flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          Capacidade *
-                        </Label>
-                        <Input
-                          id="capacidadeVlt"
-                          type="number"
-                          placeholder="Ex: 150"
-                          value={capacidadeVlt}
-                          onChange={(e) => setCapacidadeVlt(Number(e.target.value))}
-                          disabled={isSubmittingVlt}
-                          required
-                        />
-                      </div>
-
-                      <div className="grid gap-3">
-                        <Label htmlFor="linhaVlt" className="flex items-center gap-2">
-                          <MapIcon className="w-4 h-4" />
-                          Linha *
+                        <Label htmlFor="statusVlt" className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4" />
+                          Status *
                         </Label>
                         <select
-                          id="linhaVlt"
-                          value={idLinhaVlt}
-                          onChange={(e) => setIdLinhaVlt(Number(e.target.value))}
+                          id="statusVlt"
+                          value={statusVlt}
+                          onChange={(e) => setStatusVlt(e.target.value)}
                           disabled={isSubmittingVlt}
                           className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           required
                         >
-                          <option value="">Selecione uma linha</option>
-                          {linhas.map((linha) => (
-                            <option key={linha.idLinha} value={linha.idLinha}>
-                              {linha.nome} ({linha.numero})
-                            </option>
-                          ))}
+                          <option value="ATIVO">Ativo</option>
+                          <option value="INATIVO">Inativo</option>
+                          <option value="MANUTENCAO">Manutenção</option>
                         </select>
+                      </div>
+
+                      {/* Localização */}
+                      <div className="grid gap-3">
+                        <Label
+                          htmlFor="localizacaoVlt"
+                          className="flex items-center gap-2"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          Localização
+                        </Label>
+                        <Input
+                          id="localizacaoVlt"
+                          placeholder="Ex: Estação Central"
+                          value={localizacaoVlt}
+                          onChange={(e) => setLocalizacaoVlt(e.target.value)}
+                          disabled={isSubmittingVlt}
+                        />
                       </div>
                     </CardContent>
 
@@ -1387,6 +1396,7 @@ export default function GerenciamentoSistema() {
                   </form>
                 </Card>
 
+                {/* Filtro + contador */}
                 <div className="flex justify-between items-center mb-6">
                   <div className="relative w-80">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -1403,6 +1413,7 @@ export default function GerenciamentoSistema() {
                   </div>
                 </div>
 
+                {/* Lista de VLTs */}
                 <div className="space-y-4">
                   <h2 className="text-2xl font-bold text-gray-800">VLTs Cadastrados</h2>
 
@@ -1410,7 +1421,9 @@ export default function GerenciamentoSistema() {
                     <div className="text-center py-12">
                       <Train className="mx-auto h-12 w-12 text-gray-400" />
                       <h3 className="mt-4 text-lg font-medium text-gray-900">
-                        {vlts.length === 0 ? "Nenhum VLT cadastrado" : "Nenhum VLT encontrado"}
+                        {vlts.length === 0
+                          ? "Nenhum VLT cadastrado"
+                          : "Nenhum VLT encontrado"}
                       </h3>
                       <p className="mt-2 text-gray-500">
                         {vlts.length === 0
@@ -1427,10 +1440,13 @@ export default function GerenciamentoSistema() {
                               <div>
                                 <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
                                   <Train className="w-5 h-5 text-blue-600" />
-                                  VLT {vlt.numero}
+                                  {vlt.codigo}
                                 </h3>
                                 <p className="text-sm text-gray-500 mt-1">
-                                  Capacidade: {vlt.capacidade}
+                                  Status: {vlt.status || "N/A"}
+                                </p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  Localização: {vlt.localizacao || "N/A"}
                                 </p>
                               </div>
                               <div className="flex gap-1">
@@ -1454,18 +1470,6 @@ export default function GerenciamentoSistema() {
                             </div>
 
                             <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Linha:</span>
-                                <span className="font-medium">
-                                  {vlt.linha?.nome || "N/A"}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Código Linha:</span>
-                                <span className="font-medium">
-                                  {vlt.linha?.numero || "N/A"}
-                                </span>
-                              </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-500">ID VLT:</span>
                                 <span className="font-medium">{vlt.idVlt}</span>
@@ -1583,7 +1587,7 @@ export default function GerenciamentoSistema() {
                           <option value="">Selecione um VLT</option>
                           {vlts.map((vlt) => (
                             <option key={vlt.idVlt} value={vlt.idVlt}>
-                              VLT {vlt.numero} - {vlt.linha?.nome || "N/A"}
+                              VLT {vlt.codigo} - {vlt.status}
                             </option>
                           ))}
                         </select>

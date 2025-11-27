@@ -6,15 +6,11 @@ export interface CriarVltData {
   idLinha: number;
 }
 
-export interface VltView {
+export interface Vlt {
   idVlt: number;
-  numero: string;
-  capacidade: number;
-  linha?: {
-    idLinha: number;
-    nome: string;
-    numero: string;
-  };
+  codigo: string;
+  status: string | null;
+  localizacao: string | null;
 }
 
 export interface Alerta {
@@ -266,14 +262,9 @@ export async function deleteCondutor(id: number) {
 
 // VLTs - CRUD
 
-export async function getVlts(): Promise<VltView[]> {
-  try {
-    const response = await api.get("/vlt");
-    return Array.isArray(response.data) ? response.data : [];
-  } catch (error) {
-    console.error("Erro ao buscar VLTs:", error);
-    return [];
-  }
+export async function getVlts(): Promise<Vlt[]> {
+  const response = await api.get("/vlt");
+  return Array.isArray(response.data) ? response.data : [];
 }
 
 export async function getVltById(id: number) {
@@ -281,12 +272,15 @@ export async function getVltById(id: number) {
   return response.data;
 }
 
-export async function createVlt(data: CriarVltData) {
+export async function createVlt(data: { codigo: string; status: string; localizacao: string }) {
   const response = await api.post("/vlt", data);
   return response.data;
 }
 
-export async function updateVlt(id: number, data: CriarVltData) {
+export async function updateVlt(
+  id: number,
+  data: { codigo: string; status: string; localizacao: string }
+) {
   const response = await api.put(`/vlt/${id}`, data);
   return response.data;
 }
