@@ -20,18 +20,20 @@ public class JwtService {
 
     private static final SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
 
-    // Gera token a partir de email + role
-    public String generateToken(String email, String role) {
+    public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
-                .setSubject(email)
-                .claim("role", role)
+                .setSubject(userDetails.getUsername())
+                .claim("role", userDetails.getAuthorities().stream()
+                        .findFirst()
+                        .map(GrantedAuthority::getAuthority)
+                        .orElse("USER"))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24h
                 .signWith(key)
                 .compact();
     }
 
-    public Claims extractAllClaims(String token) {
+    public static Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -48,7 +50,7 @@ public class JwtService {
                 .getSubject();
     }
 
-    public boolean validateToken(String token) {
+    public static boolean validateToken(String token) {
         try {
             extractAllClaims(token);
             return true;

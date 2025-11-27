@@ -1386,19 +1386,6 @@ const handleSubmitVlt = async (e: FormEvent<HTMLFormElement>) => {
                 </>
               )}
             </TabsContent>
-
-            {/* Tab de Viagens */}
-            <TabsContent value="viagens" className="p-6">
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🚧</div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                  Funcionalidade em Desenvolvimento
-                </h3>
-                <p className="text-gray-500">
-                  O gerenciamento de viagens estará disponível em breve.
-                </p>
-              </div>
-            </TabsContent>
           </div>
         </Tabs>
     </div>
