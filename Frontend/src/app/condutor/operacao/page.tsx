@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getLinhas, createIncidente } from "@/services/vltService";
+import { 
+  getViagensDoCondutor, 
+  getCondutorByEmail, 
+  updateViagem,
+  createIncidente,
+  Viagem 
+} from "@/services/vltService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -19,45 +25,82 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { PlayCircle, AlertTriangle, LogOut } from "lucide-react";
-
-interface Linha {
-  idLinha: number;
-  nome: string;
-  numero: string;
-}
+import { PlayCircle, AlertTriangle, LogOut, Clock, Calendar } from "lucide-react";
 
 export default function CondutorOperacaoPage() {
-  const [linhas, setLinhas] = useState<Linha[]>([]);
+  // Mudamos de 'linhas' para 'viagens'
+  const [viagensAgendadas, setViagensAgendadas] = useState<Viagem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [linhaEmOperacao, setLinhaEmOperacao] = useState<Linha | null>(null);
+  const [viagemEmOperacao, setViagemEmOperacao] = useState<Viagem | null>(null);
 
+  // Estados do Incidente
   const [tipoAlerta, setTipoAlerta] = useState("");
   const [descAlerta, setDescAlerta] = useState("");
   const [isSubmittingAlert, setIsSubmittingAlert] = useState(false);
 
   useEffect(() => {
-    async function fetchData() {
+    async function carregarEscala() {
       try {
-        const linhasData = await getLinhas();
-        setLinhas(linhasData);
+        // 1. Pegar Email do Token
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const base64Url = token.split('.')[1];
+        const jsonPayload = JSON.parse(decodeURIComponent(window.atob(base64Url.replace(/-/g, '+').replace(/_/g, '/'))));
+        const email = jsonPayload.sub;
+
+        // 2. Pegar ID do Condutor
+        const condutor = await getCondutorByEmail(email);
+        
+        // 3. Pegar Viagens deste Condutor
+        const todasViagens = await getViagensDoCondutor(condutor.idCondutor);
+
+        // 4. Filtrar: O que é futuro vs O que já está rodando
+        const emAndamento = todasViagens.find((v) => v.status === "EM_VIAGEM" || v.status === "ATRASADO");
+        const agendadas = todasViagens.filter((v) => v.status === "AGENDADA");
+
+        if (emAndamento) {
+          setViagemEmOperacao(emAndamento);
+        }
+        
+        setViagensAgendadas(agendadas);
+
       } catch (error) {
-        console.error("Erro ao carregar linhas:", error);
+        console.error("Erro ao carregar escala:", error);
       } finally {
         setLoading(false);
       }
     }
-    fetchData();
+    carregarEscala();
   }, []);
 
-  const handleIniciarViagem = (linha: Linha) => {
-    if (window.confirm(`Iniciar viagem na linha ${linha.nome}?`)) {
-      setLinhaEmOperacao(linha);
+  const handleIniciarViagem = async (viagem: Viagem) => {
+    const horario = new Date(viagem.dataHoraInicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    if (window.confirm(`Iniciar viagem prevista para ${horario} na linha ${viagem.linhaNome}?`)) {
+      try {
+        // Atualiza status no backend
+        await updateViagem(viagem.idViagem, { status: "EM_VIAGEM" });
+        
+        // Atualiza tela local
+        const viagemAtualizada = { ...viagem, status: "EM_VIAGEM" };
+        setViagemEmOperacao(viagemAtualizada);
+      } catch (error) {
+        alert("Erro ao iniciar viagem. Tente novamente.");
+      }
     }
   };
 
-  const handleEncerrarViagem = () => {
-    setLinhaEmOperacao(null);
+  const handleEncerrarViagem = async () => {
+    if(!viagemEmOperacao) return;
+    if(!confirm("Deseja realmente encerrar a viagem no terminal?")) return;
+
+    try {
+      await updateViagem(viagemEmOperacao.idViagem, { status: "CONCLUIDA" });
+      setViagemEmOperacao(null);
+      window.location.reload(); // Recarrega para pegar novas viagens
+    } catch (error) {
+      alert("Erro ao encerrar viagem.");
+    }
   };
 
   const handleEnviarAlerta = async () => {
@@ -68,40 +111,49 @@ export default function CondutorOperacaoPage() {
     
     setIsSubmittingAlert(true);
     try {
-      // AGORA É SIMPLES: Só manda o texto. O Backend descobre quem é você pelo Token.
+      // Se for atraso, muda o status da viagem
+      if (tipoAlerta === "ATRASO" && viagemEmOperacao) {
+         await updateViagem(viagemEmOperacao.idViagem, { status: "ATRASADO" });
+         setViagemEmOperacao({ ...viagemEmOperacao, status: "ATRASADO" });
+      }
+
       await createIncidente({
-        descricao: `[${tipoAlerta}] ${descAlerta} - Linha: ${linhaEmOperacao?.nome}`,
-        // Não enviamos mais 'condutor: {id: ...}'. O Java resolve isso.
+        descricao: `[${tipoAlerta}] ${descAlerta} - Viagem ID: ${viagemEmOperacao?.idViagem}`,
+        status: "PENDENTE"
       });
 
-      alert("Incidente enviado com sucesso! Aguardando aprovação do CCO.");
+      alert("Incidente reportado!");
       setTipoAlerta("");
       setDescAlerta("");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      console.error("Erro:", error);
-      // Mostra a mensagem de erro real do backend (ex: se não tiver cadastro na tabela condutor)
-      const msg = error.response?.data || "Erro ao enviar incidente.";
-      alert("Falha: " + (typeof msg === 'string' ? msg : JSON.stringify(msg)));
+      alert("Erro ao enviar reporte.");
     } finally {
       setIsSubmittingAlert(false);
     }
   };
 
-  if (loading) return <div className="p-10 text-center">Carregando sistema...</div>;
+  if (loading) return <div className="p-10 text-center">Carregando escala...</div>;
 
-  if (linhaEmOperacao) {
+  // --- MODO: EM VIAGEM (Mantendo a estrutura do Card Grande) ---
+  if (viagemEmOperacao) {
     return (
       <main className="container mx-auto px-6 py-12">
-        <Card className="max-w-2xl mx-auto border-l-4 border-l-green-600 shadow-lg">
+        <Card className={`max-w-2xl mx-auto border-l-4 ${viagemEmOperacao.status === 'ATRASADO' ? 'border-l-red-500' : 'border-l-green-600'} shadow-lg`}>
           <CardHeader>
             <CardTitle className="flex justify-between items-center">
               <span>Painel de Operação</span>
-              <Badge className="bg-green-600 animate-pulse">Em Operação</Badge>
+              <Badge className={viagemEmOperacao.status === 'ATRASADO' ? "bg-red-600 animate-pulse" : "bg-green-600 animate-pulse"}>
+                {viagemEmOperacao.status === 'ATRASADO' ? 'ATRASADO' : 'EM VIAGEM'}
+              </Badge>
             </CardTitle>
-            <CardDescription>Linha: {linhaEmOperacao.nome}</CardDescription>
+            <CardDescription>
+              Linha: <span className="font-bold text-gray-900">{viagemEmOperacao.linhaNome}</span> <br/>
+              VLT: {viagemEmOperacao.vltCodigo}
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
+            
+            {/* Mantido igual ao seu código original */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" className="h-24 text-lg w-full shadow-md">
@@ -111,7 +163,7 @@ export default function CondutorOperacaoPage() {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reportar Incidente</AlertDialogTitle>
-                  <AlertDialogDescription>O alerta será enviado para aprovação do Admin.</AlertDialogDescription>
+                  <AlertDialogDescription>O alerta será enviado para o CCO.</AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
@@ -141,7 +193,7 @@ export default function CondutorOperacaoPage() {
             </AlertDialog>
 
             <Button variant="outline" onClick={handleEncerrarViagem} className="w-full">
-               <LogOut className="h-4 w-4 mr-2" /> Encerrar Viagem
+               <LogOut className="h-4 w-4 mr-2" /> Encerrar Viagem no Destino
             </Button>
           </CardContent>
         </Card>
@@ -149,22 +201,42 @@ export default function CondutorOperacaoPage() {
     );
   }
 
+  // --- MODO: SELEÇÃO DE VIAGEM (Lista de Viagens Agendadas) ---
   return (
     <main className="container mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-6">Iniciar Operação</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {linhas.map((linha) => (
-          <Card key={linha.idLinha} className="cursor-pointer hover:border-blue-500" onClick={() => handleIniciarViagem(linha)}>
-            <CardHeader>
-              <CardTitle>{linha.nome}</CardTitle>
-              <CardDescription>Código: {linha.numero}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full"><PlayCircle className="mr-2 h-4 w-4"/> Iniciar</Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <h1 className="text-3xl font-bold mb-2">Minha Escala</h1>
+      <p className="text-gray-500 mb-6">Selecione a viagem programada para iniciar.</p>
+      
+      {viagensAgendadas.length === 0 ? (
+        <div className="text-center py-12 border rounded-lg bg-slate-50">
+          <p className="text-gray-500">Nenhuma viagem agendada para você no momento.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {viagensAgendadas.map((viagem) => (
+            <Card key={viagem.idViagem} className="cursor-pointer hover:border-blue-500 transition-all" onClick={() => handleIniciarViagem(viagem)}>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <Badge variant="outline" className="mb-2 bg-blue-50 text-blue-700 border-blue-200">
+                    {new Date(viagem.dataHoraInicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </Badge>
+                  <Badge variant="secondary">{viagem.vltCodigo}</Badge>
+                </div>
+                <CardTitle className="text-lg">{viagem.linhaNome}</CardTitle>
+                <CardDescription className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(viagem.dataHoraInicio).toLocaleDateString()}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  <PlayCircle className="mr-2 h-4 w-4"/> Iniciar Viagem
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

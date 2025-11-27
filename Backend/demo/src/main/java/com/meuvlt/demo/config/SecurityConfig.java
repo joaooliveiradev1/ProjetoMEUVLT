@@ -158,8 +158,10 @@ public class SecurityConfig {
                         // ============================================================
                         .requestMatchers(HttpMethod.POST, "/viagem/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
+                        // !!! ALTERAÇÃO AQUI: Adicione "ROLE_Condutor" e "Condutor" !!!
                         .requestMatchers(HttpMethod.PUT, "/viagem/**")
-                        .hasAnyAuthority("ROLE_Administrador", "Administrador")
+                        .hasAnyAuthority("ROLE_Administrador", "Administrador", "ROLE_Condutor", "Condutor")
+
                         .requestMatchers(HttpMethod.DELETE, "/viagem/**")
                         .hasAnyAuthority("ROLE_Administrador", "Administrador")
 

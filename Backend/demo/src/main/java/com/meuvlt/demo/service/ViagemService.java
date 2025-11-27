@@ -38,6 +38,7 @@ public class ViagemService {
         dto.setIdViagem(viagem.getIdViagem());
         dto.setDataHoraInicio(viagem.getDataHoraInicio());
         dto.setDataHoraFim(viagem.getDataHoraFim());
+        dto.setStatus(viagem.getStatus());
 
         if (viagem.getCondutor() != null) {
             dto.setCondutorId(viagem.getCondutor().getIdCondutor());
@@ -61,6 +62,11 @@ public class ViagemService {
         Viagem viagem = new Viagem();
         viagem.setDataHoraInicio(dto.getDataHoraInicio());
         viagem.setDataHoraFim(dto.getDataHoraFim());
+        if (dto.getStatus() == null) {
+            viagem.setStatus("AGENDADA"); // Padrão ao criar
+        } else {
+            viagem.setStatus(dto.getStatus());
+        }
 
         Condutor condutor = condutorRepository.findById(dto.getCondutorId())
                 .orElseThrow(() -> new RuntimeException("Condutor não encontrado com ID: " + dto.getCondutorId()));
@@ -96,9 +102,24 @@ public class ViagemService {
 
     public Optional<ViagemDTO> updateViagem(int id, ViagemDTO dto) {
         return viagemRepository.findById((long) id).map(existing -> {
-            existing.setDataHoraInicio(dto.getDataHoraInicio());
-            existing.setDataHoraFim(dto.getDataHoraFim());
 
+            // VERIFICAÇÃO DE NULOS: Só atualiza se o novo valor não for nulo
+            if (dto.getDataHoraInicio() != null) {
+                existing.setDataHoraInicio(dto.getDataHoraInicio());
+            }
+
+            // A data fim pode ser nula (ex: viagem não acabou), então essa lógica depende da sua regra.
+            // Se o front enviar data, atualizamos.
+            if (dto.getDataHoraFim() != null) {
+                existing.setDataHoraFim(dto.getDataHoraFim());
+            }
+
+            // Atualiza o Status (que adicionamos recentemente)
+            if (dto.getStatus() != null && !dto.getStatus().isEmpty()) {
+                existing.setStatus(dto.getStatus());
+            }
+
+            // Verificações de relacionamentos (mantém o que já existia, mas garante que não é 0)
             if (dto.getCondutorId() != 0) {
                 Condutor condutor = condutorRepository.findById(dto.getCondutorId())
                         .orElseThrow(() -> new RuntimeException("Condutor não encontrado"));

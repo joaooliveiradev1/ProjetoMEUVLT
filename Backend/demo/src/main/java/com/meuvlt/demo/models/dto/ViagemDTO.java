@@ -96,4 +96,11 @@ public class ViagemDTO {
     public void setLinhaNome(String linhaNome) {
         this.linhaNome = linhaNome;
     }
+
+    // Adicione no DTO também
+    private String status;
+
+    // Getters e Setters
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

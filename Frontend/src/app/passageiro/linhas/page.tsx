@@ -16,10 +16,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Importando Tabs
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, MapPin, Clock, ArrowRight, Info } from "lucide-react";
 
-// Interfaces
+// Interfaces atualizadas para bater com o Backend
 interface Linha {
   idLinha: number;
   nome: string;
@@ -40,10 +40,11 @@ interface Alerta {
 interface Viagem {
   idViagem: number;
   dataHoraInicio: string;
-  origem: string;
-  destino: string;
+  dataHoraFim?: string;
+  origem?: string; 
+  destino?: string; 
   status: string;
-  linhaId: number;
+  idLinha: number; // CORREÇÃO: O backend envia "idLinha" (via @JsonProperty)
   linhaNome: string;
 }
 
@@ -62,6 +63,10 @@ export default function PassageiroLinhasPage() {
         getAlertas(),
         getViagens(),
       ]);
+      
+      // Debug para garantir que os dados estão chegando
+      console.log("Viagens carregadas:", viagensData);
+      
       setLinhas(linhasData);
       setEstacoes(estacoesData);
       setAlertas(alertasData);
@@ -79,6 +84,11 @@ export default function PassageiroLinhasPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const formatarHora = (dataString?: string) => {
+    if (!dataString) return "--:--";
+    return new Date(dataString).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  };
+
   if (loading) {
     return <p className="text-center p-12 text-gray-500">Carregando informações...</p>;
   }
@@ -90,7 +100,6 @@ export default function PassageiroLinhasPage() {
         <p className="text-gray-500">Informações em tempo real sobre sua viagem.</p>
       </div>
 
-      {/* --- SISTEMA DE ABAS PARA SEPARAÇÃO --- */}
       <Tabs defaultValue="linhas" className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-8">
           <TabsTrigger value="linhas" className="text-base">
@@ -106,14 +115,14 @@ export default function PassageiroLinhasPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* --- CONTEÚDO DA ABA: LINHAS --- */}
         <TabsContent value="linhas" className="space-y-4">
           <Accordion type="single" collapsible className="w-full space-y-4">
             {linhas.map((linha) => {
               const estacoesDaLinha = estacoes.filter((e) => e.linha?.idLinha === linha.idLinha);
               
+              // CORREÇÃO NO FILTRO: Usando 'idLinha' em vez de 'linhaId'
               const viagensDaLinha = viagens
-                .filter(v => v.linhaId === linha.idLinha && v.status !== 'CONCLUIDA')
+                .filter(v => v.idLinha === linha.idLinha && v.status !== 'CONCLUIDA')
                 .sort((a, b) => new Date(a.dataHoraInicio).getTime() - new Date(b.dataHoraInicio).getTime());
 
               const temAtraso = viagensDaLinha.some(v => v.status === 'ATRASADO');
@@ -153,31 +162,41 @@ export default function PassageiroLinhasPage() {
                                   viagem.status === 'EM_VIAGEM' ? 'bg-green-500' : 'bg-blue-500'
                                 }`} />
                                 
-                                <div className="flex justify-between items-center pl-2">
-                                  <span className="text-2xl font-bold text-gray-800">
-                                    {new Date(viagem.dataHoraInicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                  </span>
-                                  <Badge variant="outline" className={`
-                                    ${viagem.status === 'EM_VIAGEM' ? 'text-green-700 border-green-200 bg-green-50' : 
-                                      viagem.status === 'ATRASADO' ? 'text-red-700 border-red-200 bg-red-50' : 
-                                      'text-gray-600 border-gray-200 bg-gray-50'}
-                                  `}>
-                                    {viagem.status === 'EM_VIAGEM' ? 'Em Trânsito' : 
-                                     viagem.status === 'ATRASADO' ? 'Atrasado' : 'Agendada'}
-                                  </Badge>
+                                <div className="pl-2 flex flex-col gap-1">
+                                  <div className="flex justify-between items-center">
+                                    {/* HORÁRIO DE INÍCIO GRANDE */}
+                                    <span className="text-2xl font-bold text-gray-800">
+                                      {formatarHora(viagem.dataHoraInicio)}
+                                    </span>
+
+                                    <Badge variant="outline" className={`
+                                      ${viagem.status === 'EM_VIAGEM' ? 'text-green-700 border-green-200 bg-green-50' : 
+                                        viagem.status === 'ATRASADO' ? 'text-red-700 border-red-200 bg-red-50' : 
+                                        'text-gray-600 border-gray-200 bg-gray-50'}
+                                    `}>
+                                      {viagem.status === 'EM_VIAGEM' ? 'Em Trânsito' : 
+                                       viagem.status === 'ATRASADO' ? 'Atrasado' : 'Agendada'}
+                                    </Badge>
+                                  </div>
+
+                                  {/* HORÁRIO DE CHEGADA (SOLICITADO) */}
+                                  {viagem.dataHoraFim && (
+                                    <div className="flex items-center gap-1 text-xs text-gray-500 font-medium">
+                                      <ArrowRight className="h-3 w-3" />
+                                      Prev. Chegada: {formatarHora(viagem.dataHoraFim)}
+                                    </div>
+                                  )}
                                 </div>
                                 
-                                <div className="flex items-center gap-2 text-sm text-gray-600 pl-2">
-                                  <span className="truncate max-w-[40%]">{viagem.origem}</span>
-                                  <ArrowRight className="h-3 w-3 text-gray-400 shrink-0" />
-                                  <span className="truncate max-w-[40%]">{viagem.destino}</span>
+                                <div className="flex items-center gap-2 text-sm text-gray-600 pl-2 mt-2 border-t pt-2">
+                                  <span className="truncate font-medium">{viagem.linhaNome}</span>
                                 </div>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-6 bg-white rounded-lg border border-dashed text-gray-500 text-sm">
-                            Nenhuma viagem programada para breve.
+                          <div className="text-center py-8 bg-white rounded-lg border border-dashed text-gray-500 text-sm">
+                            <p>Nenhuma viagem programada para breve nesta linha.</p>
                           </div>
                         )}
                       </div>
@@ -214,7 +233,6 @@ export default function PassageiroLinhasPage() {
           </Accordion>
         </TabsContent>
 
-        {/* --- CONTEÚDO DA ABA: ALERTAS --- */}
         <TabsContent value="alertas">
           {alertas.length === 0 ? (
             <Card className="text-center py-12 border-dashed">

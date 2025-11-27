@@ -41,6 +41,15 @@ public class Viagem {
     @OneToMany(mappedBy = "viagem")
     private List<Avaliacao> avaliacoes = new ArrayList<>();
 
+    // Adicione este campo na classe Viagem
+    @Column(nullable = false)
+    private String status; // Ex: "AGENDADA", "EM_VIAGEM", "CONCLUIDA"
+
+    // Adicione os Getters e Setters
+    public String getStatus() { return status; }
+    
+    public void setStatus(String status) { this.status = status; }
+
     public int getIdViagem() {
         return idViagem;
     }
