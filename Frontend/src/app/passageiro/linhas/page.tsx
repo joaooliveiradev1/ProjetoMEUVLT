@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// Importa o getAlertas real
-import { getLinhas, getEstacoes, getAlertas } from "@/services/vltService"; 
+import { getLinhas, getEstacoes, getAlertas, getViagens } from "@/services/vltService";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,9 +16,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { AlertTriangle, MapPin } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Importando Tabs
+import { AlertTriangle, MapPin, Clock, ArrowRight, Info } from "lucide-react";
 
-// Interfaces de Linha e Estacao (sem mudança)
+// Interfaces
 interface Linha {
   idLinha: number;
   nome: string;
@@ -30,43 +31,41 @@ interface Estacao {
   endereco: string;
   linha: Linha;
 }
-
-// --- NOVA INTERFACE DE ALERTA ---
-// Baseada no AlertaDTO.java do backend
-//
 interface Alerta {
   idAlerta: number;
   titulo: string;
   mensagem: string;
-  dataHoraEnvio: string; // (LocalDateTime é recebido como string)
-  incidenteDescricao: string;
-  administradorNome?: string; // Pode ser nulo
+  dataHoraEnvio: string;
 }
-
-// Mock de status (seria outra chamada de API, mantido por enquanto)
-const mockStatus = {
-  1: { status: "ATRASADO", cor: "bg-yellow-500" },
-  2: { status: "OPERANDO COM RESTRIÇÃO", cor: "bg-blue-500" },
-  3: { status: "OPERANDO NORMALMENTE", cor: "bg-green-600" },
-};
+interface Viagem {
+  idViagem: number;
+  dataHoraInicio: string;
+  origem: string;
+  destino: string;
+  status: string;
+  linhaId: number;
+  linhaNome: string;
+}
 
 export default function PassageiroLinhasPage() {
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [estacoes, setEstacoes] = useState<Estacao[]>([]);
-  const [alertas, setAlertas] = useState<Alerta[]>([]); // Estado para Alertas reais
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [viagens, setViagens] = useState<Viagem[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function fetchData() {
     try {
-      // Chama todas as APIs reais em paralelo
-      const [linhasData, estacoesData, alertasData] = await Promise.all([
+      const [linhasData, estacoesData, alertasData, viagensData] = await Promise.all([
         getLinhas(),
         getEstacoes(),
-        getAlertas(), // Busca os alertas reais
+        getAlertas(),
+        getViagens(),
       ]);
       setLinhas(linhasData);
       setEstacoes(estacoesData);
       setAlertas(alertasData);
+      setViagens(viagensData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     } finally {
@@ -76,103 +75,181 @@ export default function PassageiroLinhasPage() {
 
   useEffect(() => {
     fetchData();
-    // Você pode adicionar um polling para getAlertas() aqui
-    // const interval = setInterval(fetchData, 30000); // Atualiza a cada 30s
-    // return () => clearInterval(interval);
+    const interval = setInterval(fetchData, 30000); 
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
-    return <p className="text-center p-12">Carregando linhas e alertas...</p>;
+    return <p className="text-center p-12 text-gray-500">Carregando informações...</p>;
   }
 
   return (
-    <main className="container mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">
-        Linhas e Alertas
-      </h1>
+    <main className="container mx-auto px-6 py-12 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Meu VLT</h1>
+        <p className="text-gray-500">Informações em tempo real sobre sua viagem.</p>
+      </div>
 
-      {/* --- MURAL DE ALERTAS (NOVA SEÇÃO) --- */}
-      {/* Exibido aqui pois o DTO do Alerta não permite filtrar por linha */}
-      {alertas.length > 0 && (
-        <Card className="mb-10 border-l-4 border-l-red-500 bg-red-50/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Mural de Alertas Ativos ({alertas.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {alertas.map((alerta) => (
-              <div key={alerta.idAlerta} className="pb-3 border-b border-red-100 last:border-b-0">
-                {/* Usando os campos do AlertaDTO 
+      {/* --- SISTEMA DE ABAS PARA SEPARAÇÃO --- */}
+      <Tabs defaultValue="linhas" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsTrigger value="linhas" className="text-base">
+            🚉 Linhas e Horários
+          </TabsTrigger>
+          <TabsTrigger value="alertas" className="text-base relative">
+            ⚠️ Alertas e Avisos
+            {alertas.length > 0 && (
+              <Badge variant="destructive" className="ml-2 h-5 px-1.5 rounded-full text-[10px]">
+                {alertas.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* --- CONTEÚDO DA ABA: LINHAS --- */}
+        <TabsContent value="linhas" className="space-y-4">
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            {linhas.map((linha) => {
+              const estacoesDaLinha = estacoes.filter((e) => e.linha?.idLinha === linha.idLinha);
+              
+              const viagensDaLinha = viagens
+                .filter(v => v.linhaId === linha.idLinha && v.status !== 'CONCLUIDA')
+                .sort((a, b) => new Date(a.dataHoraInicio).getTime() - new Date(b.dataHoraInicio).getTime());
+
+              const temAtraso = viagensDaLinha.some(v => v.status === 'ATRASADO');
+              const statusGeral = temAtraso ? "ATRASOS RELATADOS" : "OPERANDO NORMALMENTE";
+              const corGeral = temAtraso ? "bg-red-600" : "bg-green-600";
+
+              return (
+                <AccordionItem value={`linha-${linha.idLinha}`} key={linha.idLinha} className="border rounded-xl bg-white shadow-sm overflow-hidden">
+                  <AccordionTrigger className="p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-2 pr-4">
+                      <div className="flex flex-col items-start text-left">
+                        <span className="text-lg font-bold text-gray-800">{linha.nome}</span>
+                        <span className="text-sm text-gray-500">Código: {linha.numero}</span>
+                      </div>
+                      <Badge className={`${corGeral} text-white hover:${corGeral} border-0`}>
+                        {statusGeral}
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
                   
-                */}
-                <h4 className="font-semibold text-gray-800">{alerta.titulo}</h4>
-                <p className="text-sm text-gray-600">{alerta.mensagem}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {/* Formata a data (simplificado) */}
-                  {new Date(alerta.dataHoraEnvio).toLocaleString()}
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+                  <AccordionContent className="p-0">
+                    <div className="p-6 bg-slate-50 space-y-8">
+                      
+                      {/* PRÓXIMAS VIAGENS */}
+                      <div>
+                        <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-blue-600" /> 
+                          Próximas Partidas
+                        </h4>
+                        
+                        {viagensDaLinha.length > 0 ? (
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {viagensDaLinha.map((viagem) => (
+                              <div key={viagem.idViagem} className="bg-white p-4 rounded-lg border shadow-sm flex flex-col gap-2 relative overflow-hidden">
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                                  viagem.status === 'ATRASADO' ? 'bg-red-500' : 
+                                  viagem.status === 'EM_VIAGEM' ? 'bg-green-500' : 'bg-blue-500'
+                                }`} />
+                                
+                                <div className="flex justify-between items-center pl-2">
+                                  <span className="text-2xl font-bold text-gray-800">
+                                    {new Date(viagem.dataHoraInicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                  </span>
+                                  <Badge variant="outline" className={`
+                                    ${viagem.status === 'EM_VIAGEM' ? 'text-green-700 border-green-200 bg-green-50' : 
+                                      viagem.status === 'ATRASADO' ? 'text-red-700 border-red-200 bg-red-50' : 
+                                      'text-gray-600 border-gray-200 bg-gray-50'}
+                                  `}>
+                                    {viagem.status === 'EM_VIAGEM' ? 'Em Trânsito' : 
+                                     viagem.status === 'ATRASADO' ? 'Atrasado' : 'Agendada'}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 text-sm text-gray-600 pl-2">
+                                  <span className="truncate max-w-[40%]">{viagem.origem}</span>
+                                  <ArrowRight className="h-3 w-3 text-gray-400 shrink-0" />
+                                  <span className="truncate max-w-[40%]">{viagem.destino}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 bg-white rounded-lg border border-dashed text-gray-500 text-sm">
+                            Nenhuma viagem programada para breve.
+                          </div>
+                        )}
+                      </div>
 
-      {/* --- LISTAGEM DE LINHAS (SEM ALTERAÇÃO) --- */}
-      <Accordion type="single" collapsible className="w-full space-y-4">
-        {linhas.map((linha) => {
-          const estacoesDaLinha = estacoes.filter(
-            (e) => e.linha?.idLinha === linha.idLinha
-          );
+                      {/* LISTA DE ESTAÇÕES */}
+                      <div>
+                        <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-500" /> 
+                          Estações
+                        </h4>
+                        {estacoesDaLinha.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {estacoesDaLinha.map((estacao, index) => (
+                              <div key={estacao.idEstacao} className="flex items-center">
+                                <span className="bg-white border border-gray-200 px-3 py-1 rounded-full text-sm text-gray-700">
+                                  {estacao.nome}
+                                </span>
+                                {index < estacoesDaLinha.length - 1 && (
+                                  <div className="w-4 h-[1px] bg-gray-300 mx-1"></div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 italic text-sm">Nenhuma estação cadastrada.</p>
+                        )}
+                      </div>
 
-          // @ts-ignore
-          const status = mockStatus[linha.idLinha] || mockStatus[3];
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        </TabsContent>
 
-          return (
-            <AccordionItem value={`linha-${linha.idLinha}`} key={linha.idLinha} className="border rounded-lg bg-white shadow-sm">
-              <AccordionTrigger className="p-6 text-lg font-medium hover:no-underline">
-                <div className="flex justify-between items-center w-full">
-                  <span>{linha.nome}</span>
-                  <Badge className={`${status.cor} text-white hover:${status.cor}`}>
-                    {status.status}
-                  </Badge>
+        {/* --- CONTEÚDO DA ABA: ALERTAS --- */}
+        <TabsContent value="alertas">
+          {alertas.length === 0 ? (
+            <Card className="text-center py-12 border-dashed">
+              <CardContent>
+                <div className="mb-4 flex justify-center">
+                  <div className="bg-green-100 p-3 rounded-full">
+                    <Info className="h-8 w-8 text-green-600" />
+                  </div>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="p-6 pt-0">
-                
-                {/* Seção de Alertas removida daqui */}
-
-                {/* Estações da Linha */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-blue-600" /> Estações
-                  </h4>
-                  {estacoesDaLinha.length > 0 ? (
-                    <ul className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {estacoesDaLinha.map((estacao) => (
-                        <li
-                          key={estacao.idEstacao} 
-                          className="bg-gray-50 border rounded-lg p-3"
-                        >
-                          <p className="font-medium text-gray-700">
-                            {estacao.nome}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500 italic">
-                      Nenhuma estação cadastrada.
-                    </p>
-                  )}
-                </div>
-
-              </AccordionContent>
-            </AccordionItem>
-          );
-        })}
-      </Accordion>
+                <h3 className="text-lg font-medium text-gray-900">Tudo operando normalmente</h3>
+                <p className="text-gray-500">Não há alertas ou incidentes reportados no momento.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {alertas.map((alerta) => (
+                <Card key={alerta.idAlerta} className="border-l-4 border-l-red-500 shadow-md">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-red-700">
+                      <AlertTriangle className="h-5 w-5" />
+                      {alerta.titulo}
+                    </CardTitle>
+                    <CardDescription>
+                      Reportado em: {new Date(alerta.dataHoraEnvio).toLocaleString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-800 text-lg">{alerta.mensagem}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }
