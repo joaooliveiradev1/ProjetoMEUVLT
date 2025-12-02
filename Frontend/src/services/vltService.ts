@@ -62,18 +62,18 @@ export interface Condutor {
 }
 
 
-// VIAGENS - INTERFACES E TIPOS
 
 export interface Viagem {
   idViagem: number;
   dataHoraInicio: string;
-  dataHoraFim: string;
+  dataHoraFim: string; 
   idVlt: number;
   idCondutor: number;
   idLinha: number;
   condutorNome?: string;
   vltCodigo?: string;
   linhaNome?: string;
+  status: string; 
 }
 
 export interface CriarViagemData {
