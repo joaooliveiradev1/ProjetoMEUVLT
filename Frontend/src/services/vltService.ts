@@ -63,17 +63,15 @@ export interface Condutor {
 
 
 
-export interface Viagem {
+interface Viagem {
   idViagem: number;
   dataHoraInicio: string;
-  dataHoraFim: string; 
-  idVlt: number;
-  idCondutor: number;
+  dataHoraFim?: string;
+  origem?: string;
+  destino?: string;
+  status: string;
   idLinha: number;
-  condutorNome?: string;
-  vltCodigo?: string;
   linhaNome?: string;
-  status: string; 
 }
 
 export interface CriarViagemData {
