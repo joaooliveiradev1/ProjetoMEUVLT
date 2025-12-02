@@ -670,7 +670,7 @@ export default function GerenciamentoSistema() {
   const handleEditViagem = (viagem: Viagem) => {
     setViagemEditando(viagem);
     setDataHoraInicio(viagem.dataHoraInicio);
-    setDataHoraFim(viagem.dataHoraFim);
+    setDataHoraFim(viagem.dataHoraFim || "")
     setIdVltViagem(viagem.idVlt);
     setIdCondutorViagem(viagem.idCondutor);
     setIdLinhaViagem(viagem.idLinha);
