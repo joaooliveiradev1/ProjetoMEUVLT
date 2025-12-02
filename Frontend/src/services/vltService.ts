@@ -63,15 +63,17 @@ export interface Condutor {
 
 
 
-interface Viagem {
+export interface Viagem {
   idViagem: number;
   dataHoraInicio: string;
-  dataHoraFim?: string;
-  origem?: string;
-  destino?: string;
-  status: string;
+  dataHoraFim?: string; // Coloque ? se puder ser nulo
+  idVlt: number;
+  idCondutor: number;
   idLinha: number;
+  condutorNome?: string;
+  vltCodigo?: string;
   linhaNome?: string;
+  status: string; // O campo novo que adicionamos
 }
 
 export interface CriarViagemData {
