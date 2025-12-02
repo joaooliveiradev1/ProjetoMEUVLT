@@ -38,10 +38,11 @@ import {
   createViagem,
   updateViagem,
   deleteViagem,
-  Viagem, // IMPORTANTE: Usando a interface do serviço
+  Viagem, 
   CriarViagemData
 } from "@/services/vltService";
 
+// Interfaces locais mantidas para uso específico do componente, se necessário
 interface Linha {
   idLinha: number;
   nome: string;
@@ -61,8 +62,6 @@ interface Vlt {
   status: string | null;
   localizacao: string | null;
 }
-
-// REMOVIDA A INTERFACE LOCAL "Viagem" PARA USAR A IMPORTADA
 
 export default function GerenciamentoSistema() {
   const [activeTab, setActiveTab] = useState("condutores");
@@ -1578,7 +1577,7 @@ export default function GerenciamentoSistema() {
                           <option value="">Selecione um VLT</option>
                           {vlts.map((vlt) => (
                             <option key={vlt.idVlt} value={vlt.idVlt}>
-                              {vlt.codigo} - {vlt.status || "sem status"}
+                              {vlt.codigo}
                             </option>
                           ))}
                         </select>
@@ -1604,7 +1603,7 @@ export default function GerenciamentoSistema() {
                           <option value="">Selecione um condutor</option>
                           {condutores.map((condutor) => (
                             <option key={condutor.idCondutor} value={condutor.idCondutor}>
-                              {condutor.usuarioNome} - {condutor.matricula}
+                              {condutor.usuarioNome}
                             </option>
                           ))}
                         </select>
@@ -1630,7 +1629,7 @@ export default function GerenciamentoSistema() {
                           <option value="">Selecione uma linha</option>
                           {linhas.map((linha) => (
                             <option key={linha.idLinha} value={linha.idLinha}>
-                              {linha.nome} ({linha.numero})
+                              {linha.nome}
                             </option>
                           ))}
                         </select>
