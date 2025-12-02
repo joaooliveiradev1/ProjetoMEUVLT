@@ -19,7 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, MapPin, Clock, ArrowRight, Info } from "lucide-react";
 
-// Interfaces atualizadas para bater com o Backend
+// Interfaces atualizadas para bater com o Backend e Service
 interface Linha {
   idLinha: number;
   nome: string;
@@ -44,8 +44,8 @@ interface Viagem {
   origem?: string; 
   destino?: string; 
   status: string;
-  idLinha: number; // CORREÇÃO: O backend envia "idLinha" (via @JsonProperty)
-  linhaNome: string;
+  idLinha: number; 
+  linhaNome?: string; // CORREÇÃO: Adicionado '?' para ser opcional
 }
 
 export default function PassageiroLinhasPage() {
@@ -117,7 +117,6 @@ export default function PassageiroLinhasPage() {
             {linhas.map((linha) => {
               const estacoesDaLinha = estacoes.filter((e) => e.linha?.idLinha === linha.idLinha);
               
-              // CORREÇÃO NO FILTRO: Usando 'idLinha' em vez de 'linhaId'
               const viagensDaLinha = viagens
                 .filter(v => v.idLinha === linha.idLinha && v.status !== 'CONCLUIDA')
                 .sort((a, b) => new Date(a.dataHoraInicio).getTime() - new Date(b.dataHoraInicio).getTime());

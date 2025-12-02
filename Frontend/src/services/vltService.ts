@@ -67,14 +67,14 @@ export interface Condutor {
 export interface Viagem {
   idViagem: number;
   dataHoraInicio: string;
-  dataHoraFim?: string; // Alterado para opcional (?)
+  dataHoraFim?: string; // Corrigido para opcional (?)
   idVlt: number;
   idCondutor: number;
   idLinha: number;
   condutorNome?: string;
   vltCodigo?: string;
   linhaNome?: string;
-  status: string; // Adicionado este campo que faltava
+  status: string; // Adicionado campo status que faltava
 }
 
 export interface CriarViagemData {
