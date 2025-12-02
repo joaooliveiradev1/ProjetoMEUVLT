@@ -1,4 +1,7 @@
+// Arquivo: src/services/vltService.ts
 import api from "./api";
+
+// --- INTERFACES ---
 
 export interface CriarVltData {
   numero: string;
@@ -61,19 +64,18 @@ export interface Condutor {
   usuarioEmail: string;
 }
 
-
-
+// ✅ INTERFACE VIAGEM CORRIGIDA E PADRONIZADA
 export interface Viagem {
   idViagem: number;
   dataHoraInicio: string;
-  dataHoraFim?: string; // Coloque ? se puder ser nulo
+  dataHoraFim?: string; // Opcional
   idVlt: number;
   idCondutor: number;
   idLinha: number;
   condutorNome?: string;
   vltCodigo?: string;
   linhaNome?: string;
-  status: string; // O campo novo que adicionamos
+  status?: string; // Adicionado para evitar erro no frontend
 }
 
 export interface CriarViagemData {
@@ -94,9 +96,9 @@ export interface AtualizarViagemData {
   status?: string;
 }
 
+// --- FUNÇÕES CRUD ---
 
-// ALERTAS - CRUD
-
+// ALERTAS
 export async function getAlertas(): Promise<Alerta[]> {
   try {
     const response = await api.get("/alertas");
@@ -117,8 +119,7 @@ export async function deleteAlerta(id: number) {
   return response.data;
 }
  
-// INCIDENTES - FLUXO DE APROVAÇÃO
-
+// INCIDENTES
 export async function getIncidentesPendentes(): Promise<IncidenteView[]> {
   try {
     const response = await api.get("/incidente/status/PENDENTE");
@@ -137,16 +138,13 @@ export async function atualizarStatusIncidente(
   return response.data;
 }
 
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createIncidente(data: any) {
   const response = await api.post("/incidente", data);
   return response.data;
 }
 
-
-// LINHAS - CRUD
-
+// LINHAS
 export async function getLinhas() {
   const response = await api.get("/api/linhas");
   return response.data;
@@ -167,9 +165,7 @@ export async function deleteLinha(id: number) {
   return response.data;
 }
 
-
-// ESTAÇÕES - CRUD
-
+// ESTAÇÕES
 export async function getEstacoes() {
   const response = await api.get("/estacoes");
   return response.data;
@@ -190,8 +186,7 @@ export async function deleteEstacao(id: number) {
   return response.data;
 }
 
-// USUÁRIOS - CRUD
-
+// USUÁRIOS
 export async function getUsuarioById(id: number) {
   const response = await api.get(`/usuarios/${id}`);
   return response.data;
@@ -203,9 +198,7 @@ export async function updateUsuario(id: number, data: any) {
   return response.data;
 }
 
-
-// CONDUTORES - CRUD
-
+// CONDUTORES
 export async function getCondutores(): Promise<Condutor[]> {
   try {
     const response = await api.get("/condutor");
@@ -246,9 +239,7 @@ export async function deleteCondutor(id: number) {
   return response.data;
 }
 
-
-// VLTs - CRUD
-
+// VLTs
 export async function getVlts(): Promise<Vlt[]> {
   const response = await api.get("/vlt");
   return Array.isArray(response.data) ? response.data : [];
@@ -277,10 +268,7 @@ export async function deleteVlt(id: number) {
   return response.data;
 }
 
-
-
-// VIAGENS - CRUD E OPERAÇÕES
-
+// VIAGENS
 export async function getViagens(): Promise<Viagem[]> {
   const response = await api.get("/viagem");
   return Array.isArray(response.data) ? response.data : [];
@@ -314,7 +302,6 @@ export async function deleteViagem(idViagem: number): Promise<void> {
     if (!idViagem) {
       throw new Error("ID da viagem é obrigatório");
     }
-
     await api.delete(`/viagem/${idViagem}`);
   } catch (error) {
     console.error(`Erro ao deletar viagem ${idViagem}:`, error);

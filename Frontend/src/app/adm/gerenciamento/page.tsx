@@ -38,7 +38,7 @@ import {
   createViagem,
   updateViagem,
   deleteViagem,
-  Viagem as ViagemType,
+  Viagem, // IMPORTANTE: Usando a interface do serviço
   CriarViagemData
 } from "@/services/vltService";
 
@@ -56,28 +56,17 @@ interface Estacao {
 }
 
 interface Vlt {
-idVlt: number;
-codigo: string;
-status: string | null;
-localizacao: string | null;
+  idVlt: number;
+  codigo: string;
+  status: string | null;
+  localizacao: string | null;
 }
 
-export interface Viagem {
-  idViagem: number;
-  dataHoraInicio: string;    
-  dataHoraFim?: string;         
-  idCondutor: number;
-  idVlt: number;
-  idLinha: number;
-  condutorNome?: string;
-  vltCodigo?: string;
-  linhaNome?: string;
-}
+// REMOVIDA A INTERFACE LOCAL "Viagem" PARA USAR A IMPORTADA
 
 export default function GerenciamentoSistema() {
   const [activeTab, setActiveTab] = useState("condutores");
 
-  
   const [searchTerm, setSearchTerm] = useState("");
 
   const [condutores, setCondutores] = useState<CondutorType[]>([]);
@@ -608,10 +597,10 @@ export default function GerenciamentoSistema() {
 
     const resetFormViagem = () => {
       setDataHoraInicio("");    
-      setDataHoraFim("");      
+      setDataHoraFim("");       
       setIdVltViagem(0);
       setIdCondutorViagem(0);
-      setIdLinhaViagem(0);     
+      setIdLinhaViagem(0);      
       setViagemEditando(null);
     };
 
@@ -670,7 +659,8 @@ export default function GerenciamentoSistema() {
   const handleEditViagem = (viagem: Viagem) => {
     setViagemEditando(viagem);
     setDataHoraInicio(viagem.dataHoraInicio);
-    setDataHoraFim(viagem.dataHoraFim || "")
+    // CORREÇÃO: Trata campo undefined usando valor padrão
+    setDataHoraFim(viagem.dataHoraFim || ""); 
     setIdVltViagem(viagem.idVlt);
     setIdCondutorViagem(viagem.idCondutor);
     setIdLinhaViagem(viagem.idLinha);
@@ -698,7 +688,7 @@ export default function GerenciamentoSistema() {
 
   return (
     <div className="pl-35 justify-center w-350 p-6">
-      {/*  HEADER */}
+      {/* HEADER */}
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-gray-800">
           Painel do administrador
@@ -1326,7 +1316,7 @@ export default function GerenciamentoSistema() {
             )}
           </TabsContent>
 
-          {/*  TAB: VLTs */}
+          {/* TAB: VLTs */}
           <TabsContent value="vlts" className="p-6">
             {vltLoading ? (
               <div className="flex justify-center items-center py-8">
@@ -1720,7 +1710,7 @@ export default function GerenciamentoSistema() {
                                   {new Date(viagem.dataHoraInicio).toLocaleString()}
                                 </p>
                                 <p className="text-sm text-gray-500 mb-3">
-                                  Fim: {new Date(viagem.dataHoraFim).toLocaleString()}
+                                  Fim: {viagem.dataHoraFim ? new Date(viagem.dataHoraFim).toLocaleString() : "Em andamento"}
                                 </p>
                               </div>
                               <div className="flex gap-1">
