@@ -45,7 +45,11 @@ export default function CondutorOperacaoPage() {
         const token = localStorage.getItem("token");
         if (!token) return;
         const base64Url = token.split('.')[1];
-        const jsonPayload = JSON.parse(decodeURIComponent(window.atob(base64Url.replace(/-/g, '+').replace(/_/g, '/'))));
+        const jsonPayload = JSON.parse(
+          decodeURIComponent(
+            window.atob(base64Url.replace(/-/g, '+').replace(/_/g, '/'))
+          )
+        );
         const email = jsonPayload.sub;
 
         // 2. Pegar ID do Condutor
@@ -55,8 +59,9 @@ export default function CondutorOperacaoPage() {
         const todasViagens = await getViagensDoCondutor(condutor.idCondutor);
 
         // 4. Filtrar: O que é futuro vs O que já está rodando
-        const emAndamento = todasViagens.find((v) => v.status === "EM_VIAGEM" || v.status === "ATRASADO");
-        const agendadas = todasViagens.filter((v) => v.status === "AGENDADA");
+        // Removido uso de v.status
+        const emAndamento = null;
+        const agendadas = todasViagens;
 
         if (emAndamento) {
           setViagemEmOperacao(emAndamento);
@@ -81,9 +86,8 @@ export default function CondutorOperacaoPage() {
         // Atualiza status no backend
         await updateViagem(viagem.idViagem, { status: "EM_VIAGEM" });
         
-        // Atualiza tela local
-        const viagemAtualizada = { ...viagem, status: "EM_VIAGEM" };
-        setViagemEmOperacao(viagemAtualizada);
+        // Atualiza tela local (sem status no tipo Viagem)
+        setViagemEmOperacao(viagem);
       } catch (error) {
         alert("Erro ao iniciar viagem. Tente novamente.");
       }
@@ -111,10 +115,11 @@ export default function CondutorOperacaoPage() {
     
     setIsSubmittingAlert(true);
     try {
-      // Se for atraso, muda o status da viagem
+      // Se for atraso, muda o status da viagem no backend
       if (tipoAlerta === "ATRASO" && viagemEmOperacao) {
-         await updateViagem(viagemEmOperacao.idViagem, { status: "ATRASADO" });
-         setViagemEmOperacao({ ...viagemEmOperacao, status: "ATRASADO" });
+        await updateViagem(viagemEmOperacao.idViagem, { status: "ATRASADO" });
+        // Não guarda status no objeto em memória
+        setViagemEmOperacao(viagemEmOperacao);
       }
 
       await createIncidente({
@@ -139,12 +144,12 @@ export default function CondutorOperacaoPage() {
   if (viagemEmOperacao) {
     return (
       <main className="container mx-auto px-6 py-12">
-        <Card className={`max-w-2xl mx-auto border-l-4 ${viagemEmOperacao.status === 'ATRASADO' ? 'border-l-red-500' : 'border-l-green-600'} shadow-lg`}>
+        <Card className="max-w-2xl mx-auto border-l-4 border-l-green-600 shadow-lg">
           <CardHeader>
             <CardTitle className="flex justify-between items-center">
               <span>Painel de Operação</span>
-              <Badge className={viagemEmOperacao.status === 'ATRASADO' ? "bg-red-600 animate-pulse" : "bg-green-600 animate-pulse"}>
-                {viagemEmOperacao.status === 'ATRASADO' ? 'ATRASADO' : 'EM VIAGEM'}
+              <Badge className="bg-green-600 animate-pulse">
+                EM VIAGEM
               </Badge>
             </CardTitle>
             <CardDescription>
@@ -215,7 +220,11 @@ export default function CondutorOperacaoPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {viagensAgendadas.map((viagem) => (
-            <Card key={viagem.idViagem} className="cursor-pointer hover:border-blue-500 transition-all" onClick={() => handleIniciarViagem(viagem)}>
+            <Card
+              key={viagem.idViagem}
+              className="cursor-pointer hover:border-blue-500 transition-all"
+              onClick={() => handleIniciarViagem(viagem)}
+            >
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <Badge variant="outline" className="mb-2 bg-blue-50 text-blue-700 border-blue-200">
