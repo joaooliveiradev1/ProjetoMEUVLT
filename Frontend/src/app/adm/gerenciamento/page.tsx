@@ -65,7 +65,7 @@ localizacao: string | null;
 export interface Viagem {
   idViagem: number;
   dataHoraInicio: string;    
-  dataHoraFim: string;         
+  dataHoraFim?: string;         
   idCondutor: number;
   idVlt: number;
   idLinha: number;
